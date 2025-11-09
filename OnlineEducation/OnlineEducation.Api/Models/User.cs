@@ -1,21 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
 
 namespace OnlineEducation.Api.Models;
 
-public class User
+public class User : IdentityUser<int>
 {
-    public int Id { get; set; }
-
     [Required]
     [MaxLength(100)]
     public string FullName { get; set; }
-
-    [Required]
-    [EmailAddress]
-    public string Email { get; set; }
-
-    [Required]
-    public string PasswordHash { get; set; }
 
     public virtual ICollection<Course> CoursesAsInstructor { get; set; } = new List<Course>();
     public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
