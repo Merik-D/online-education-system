@@ -1,11 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OnlineEducation.Api.Data;
 using OnlineEducation.Api.Dtos.Courses;
 using OnlineEducation.Api.Dtos.Learning;
 using OnlineEducation.Api.Extensions;
-using OnlineEducation.Api.Models;
+using OnlineEducation.Api.Interfaces;
 
 namespace OnlineEducation.Api.Controllers;
 
@@ -14,65 +12,37 @@ namespace OnlineEducation.Api.Controllers;
 [Authorize]
 public class LearningController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ILearningService _learningService;
 
-    public LearningController(ApplicationDbContext context)
+    public LearningController(ILearningService learningService)
     {
-        _context = context;
+        _learningService = learningService;
     }
 
     [HttpPost("courses/{courseId}/enroll")]
     public async Task<IActionResult> EnrollInCourse(int courseId)
     {
         var userId = User.GetUserId();
-
-        var courseExists = await _context.Courses.AnyAsync(c => c.Id == courseId);
-        if (!courseExists)
+        try
         {
-            return NotFound(new { message = "Course not found" });
+            await _learningService.EnrollInCourseAsync(courseId, userId);
+            return Ok(new { message = "Successfully enrolled" });
         }
-
-        var alreadyEnrolled = await _context.Enrollments
-            .AnyAsync(e => e.CourseId == courseId && e.StudentId == userId);
-
-        if (alreadyEnrolled)
+        catch (KeyNotFoundException ex)
         {
-            return BadRequest(new { message = "You are already enrolled in this course" });
+            return NotFound(new { message = ex.Message });
         }
-
-        var enrollment = new Enrollment
+        catch (InvalidOperationException ex)
         {
-            CourseId = courseId,
-            StudentId = userId,
-            EnrollmentDate = DateTime.UtcNow,
-            Progress = 0
-        };
-
-        await _context.Enrollments.AddAsync(enrollment);
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = "Successfully enrolled" });
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpGet("my-courses")]
     public async Task<ActionResult<IEnumerable<CourseDto>>> GetMyCourses()
     {
         var userId = User.GetUserId();
-
-        var myCourses = await _context.Enrollments
-            .Where(e => e.StudentId == userId)
-            .Select(e => e.Course)
-            .Select(c => new CourseDto
-            {
-                Id = c.Id,
-                Title = c.Title,
-                Description = c.Description,
-                Level = c.Level.ToString(),
-                InstructorId = c.InstructorId,
-                CategoryId = c.CategoryId
-            })
-            .ToListAsync();
-
+        var myCourses = await _learningService.GetMyCoursesAsync(userId);
         return Ok(myCourses);
     }
 
@@ -81,45 +51,13 @@ public class LearningController : ControllerBase
     {
         var userId = User.GetUserId();
 
-        var enrollment = await _context.Enrollments
-            .FirstOrDefaultAsync(e => e.StudentId == userId && e.CourseId == courseId);
-
-        if (enrollment == null)
-        {
-            return Forbid("You are not enrolled in this course.");
-        }
-
-        var courseDetails = await _context.Courses
-            .Where(c => c.Id == courseId)
-            .Select(c => new MyCourseDetailsDto
-            {
-                CourseId = c.Id,
-                Title = c.Title,
-                Progress = enrollment.Progress,
-                Modules = c.Modules.OrderBy(m => m.Order).Select(m => new ModuleDto
-                {
-                    Id = m.Id,
-                    Title = m.Title,
-                    Order = m.Order,
-                    Lessons = m.Lessons.OrderBy(l => l.Order).Select(l => new LessonDto
-                    {
-                        Id = l.Id,
-                        Title = l.Title,
-                        Order = l.Order,
-                        VideoUrl = l.VideoUrl,
-                        TextContent = l.TextContent
-                    }).ToList()
-                }).ToList()
-            })
-            .FirstOrDefaultAsync();
+        var courseDetails = await _learningService.GetCourseDetailsAsync(courseId, userId);
 
         if (courseDetails == null)
         {
-            return NotFound("Course details not found.");
+            return Forbid();
         }
 
         return Ok(courseDetails);
     }
-
-    // lessons enging and tests will be added later.
 }

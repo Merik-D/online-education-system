@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OnlineEducation.Api.Data;
 using OnlineEducation.Api.Dtos.Categories;
-using OnlineEducation.Api.Models;
+using OnlineEducation.Api.Interfaces;
 
 namespace OnlineEducation.Api.Controllers;
 
@@ -10,44 +8,24 @@ namespace OnlineEducation.Api.Controllers;
 [ApiController]
 public class CategoriesController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ICategoryService _categoryService;
 
-    public CategoriesController(ApplicationDbContext context)
+    public CategoriesController(ICategoryService categoryService)
     {
-        _context = context;
+        _categoryService = categoryService;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CategoryDto>>> GetCategories()
     {
-        var categories = await _context.Categories
-            .Select(c => new CategoryDto
-            {
-                Id = c.Id,
-                Name = c.Name
-            })
-            .ToListAsync();
-
+        var categories = await _categoryService.GetCategoriesAsync();
         return Ok(categories);
     }
 
     [HttpPost]
     public async Task<ActionResult<CategoryDto>> CreateCategory([FromBody] CreateCategoryDto createCategoryDto)
     {
-        var category = new Category
-        {
-            Name = createCategoryDto.Name
-        };
-
-        await _context.Categories.AddAsync(category);
-        await _context.SaveChangesAsync();
-
-        var categoryDto = new CategoryDto
-        {
-            Id = category.Id,
-            Name = category.Name
-        };
-
-        return CreatedAtAction(nameof(GetCategories), new { id = category.Id }, categoryDto);
+        var categoryDto = await _categoryService.CreateCategoryAsync(createCategoryDto);
+        return CreatedAtAction(nameof(GetCategories), new { id = categoryDto.Id }, categoryDto);
     }
 }

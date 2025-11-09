@@ -7,12 +7,18 @@ using OnlineEducation.Api.Data;
 using OnlineEducation.Api.Models;
 using System.Text;
 using System.Text.Json.Serialization;
+using OnlineEducation.Api.Interfaces;
+using OnlineEducation.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
+
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<ILearningService, LearningService>();
 
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 {
