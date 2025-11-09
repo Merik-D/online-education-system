@@ -8,11 +8,11 @@ public class Enrollment
 
     public int StudentId { get; set; }
     [ForeignKey("StudentId")]
-    public virtual required User Student { get; set; }
+    public virtual User Student { get; set; }
 
     public int CourseId { get; set; }
     [ForeignKey("CourseId")]
-    public virtual required Course Course { get; set; }
+    public virtual Course Course { get; set; }
 
     public double Progress { get; set; } = 0.0;
     public DateTime EnrollmentDate { get; set; } = DateTime.UtcNow;
