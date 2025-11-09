@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using OnlineEducation.Api.Enums;
 using OnlineEducation.Api.Models;
+using OnlineEducation.Api.Models.Lessons;
 
 namespace OnlineEducation.Api.Data;
 
@@ -20,6 +22,11 @@ public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<int>, i
     public DbSet<Enrollment> Enrollments { get; set; }
     public DbSet<Review> Reviews { get; set; }
     public DbSet<Certificate> Certificates { get; set; }
+    public DbSet<Question> Questions { get; set; }
+    public DbSet<Option> Options { get; set; }
+    public DbSet<StudentSubmission> StudentSubmissions { get; set; }
+    public DbSet<StudentAnswer> StudentAnswers { get; set; }
+    public DbSet<StudentAnswerOption> StudentAnswerOptions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,5 +53,10 @@ public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<int>, i
             .WithMany(u => u.Reviews)
             .HasForeignKey(r => r.StudentId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Lesson>()
+            .HasDiscriminator(l => l.Type)
+            .HasValue<VideoLesson>(LessonType.Video)
+            .HasValue<TextLesson>(LessonType.Text);
     }
 }
