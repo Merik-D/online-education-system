@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnlineEducation.Api.Data;
 using OnlineEducation.Api.Dtos.Courses;
@@ -59,6 +60,7 @@ public class CoursesController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<ActionResult<CourseDto>> CreateCourse([FromBody] CreateCourseDto createCourseDto)
     {
         var course = new Course
@@ -87,6 +89,7 @@ public class CoursesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,Instructor")]
     public async Task<IActionResult> UpdateCourse(int id, [FromBody] CreateCourseDto updateCourseDto)
     {
         var course = await _context.Courses.FindAsync(id);
@@ -124,6 +127,7 @@ public class CoursesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteCourse(int id)
     {
         var course = await _context.Courses.FindAsync(id);
