@@ -60,4 +60,19 @@ public class LearningController : ControllerBase
 
         return Ok(courseDetails);
     }
+
+    [HttpPost("test/{testId}/submit")]
+    public async Task<ActionResult<GradingResultDto>> SubmitTest(int testId, [FromBody] TestSubmissionDto submissionDto)
+    {
+        var userId = User.GetUserId();
+        try
+        {
+            var result = await _learningService.SubmitTestAsync(testId, userId, submissionDto);
+            return Ok(result);
+        }
+        catch (Exception ex) when (ex is KeyNotFoundException or InvalidOperationException)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

@@ -4,11 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OnlineEducation.Api.Data;
+using OnlineEducation.Api.Interfaces;
 using OnlineEducation.Api.Models;
+using OnlineEducation.Api.Services;
+using OnlineEducation.Api.Services.GradingStrategies;
 using System.Text;
 using System.Text.Json.Serialization;
-using OnlineEducation.Api.Interfaces;
-using OnlineEducation.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<ILearningService, LearningService>();
+
+builder.Services.AddScoped<IGradingStrategyFactory, GradingStrategyFactory>();
+builder.Services.AddScoped<IGradingStrategy, AutoGradingStrategy>();
+builder.Services.AddScoped<IGradingStrategy, ManualGradingStrategy>();
 
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 {

@@ -260,7 +260,7 @@ namespace OnlineEducation.Api.Migrations
                     b.ToTable("Enrollments");
                 });
 
-            modelBuilder.Entity("OnlineEducation.Api.Models.Lesson", b =>
+            modelBuilder.Entity("OnlineEducation.Api.Models.Lessons.Lesson", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -274,21 +274,22 @@ namespace OnlineEducation.Api.Migrations
                     b.Property<int>("Order")
                         .HasColumnType("integer");
 
-                    b.Property<string>("TextContent")
-                        .HasColumnType("text");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("VideoUrl")
-                        .HasColumnType("text");
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ModuleId");
 
                     b.ToTable("Lessons");
+
+                    b.HasDiscriminator<int>("Type");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("OnlineEducation.Api.Models.Module", b =>
@@ -314,6 +315,59 @@ namespace OnlineEducation.Api.Migrations
                     b.HasIndex("CourseId");
 
                     b.ToTable("Modules");
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.Option", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.ToTable("Options");
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.Question", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TestId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TestId");
+
+                    b.ToTable("Questions");
                 });
 
             modelBuilder.Entity("OnlineEducation.Api.Models.Review", b =>
@@ -345,6 +399,87 @@ namespace OnlineEducation.Api.Migrations
                     b.ToTable("Reviews");
                 });
 
+            modelBuilder.Entity("OnlineEducation.Api.Models.StudentAnswer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AnswerText")
+                        .HasColumnType("text");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StudentSubmissionId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("StudentSubmissionId");
+
+                    b.ToTable("StudentAnswers");
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.StudentAnswerOption", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("OptionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StudentAnswerId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OptionId");
+
+                    b.HasIndex("StudentAnswerId");
+
+                    b.ToTable("StudentAnswerOptions");
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.StudentSubmission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<double?>("Score")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("TestId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("TestId");
+
+                    b.ToTable("StudentSubmissions");
+                });
+
             modelBuilder.Entity("OnlineEducation.Api.Models.Test", b =>
                 {
                     b.Property<int>("Id")
@@ -354,6 +489,9 @@ namespace OnlineEducation.Api.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("ModuleId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StrategyType")
                         .HasColumnType("integer");
 
                     b.Property<string>("Title")
@@ -441,6 +579,26 @@ namespace OnlineEducation.Api.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.Lessons.TextLesson", b =>
+                {
+                    b.HasBaseType("OnlineEducation.Api.Models.Lessons.Lesson");
+
+                    b.Property<string>("TextContent")
+                        .HasColumnType("text");
+
+                    b.HasDiscriminator().HasValue(1);
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.Lessons.VideoLesson", b =>
+                {
+                    b.HasBaseType("OnlineEducation.Api.Models.Lessons.Lesson");
+
+                    b.Property<string>("VideoUrl")
+                        .HasColumnType("text");
+
+                    b.HasDiscriminator().HasValue(0);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
@@ -543,7 +701,7 @@ namespace OnlineEducation.Api.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("OnlineEducation.Api.Models.Lesson", b =>
+            modelBuilder.Entity("OnlineEducation.Api.Models.Lessons.Lesson", b =>
                 {
                     b.HasOne("OnlineEducation.Api.Models.Module", "Module")
                         .WithMany("Lessons")
@@ -565,6 +723,28 @@ namespace OnlineEducation.Api.Migrations
                     b.Navigation("Course");
                 });
 
+            modelBuilder.Entity("OnlineEducation.Api.Models.Option", b =>
+                {
+                    b.HasOne("OnlineEducation.Api.Models.Question", "Question")
+                        .WithMany("Options")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.Question", b =>
+                {
+                    b.HasOne("OnlineEducation.Api.Models.Test", "Test")
+                        .WithMany("Questions")
+                        .HasForeignKey("TestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Test");
+                });
+
             modelBuilder.Entity("OnlineEducation.Api.Models.Review", b =>
                 {
                     b.HasOne("OnlineEducation.Api.Models.Course", "Course")
@@ -582,6 +762,63 @@ namespace OnlineEducation.Api.Migrations
                     b.Navigation("Course");
 
                     b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.StudentAnswer", b =>
+                {
+                    b.HasOne("OnlineEducation.Api.Models.Question", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineEducation.Api.Models.StudentSubmission", "StudentSubmission")
+                        .WithMany("Answers")
+                        .HasForeignKey("StudentSubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+
+                    b.Navigation("StudentSubmission");
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.StudentAnswerOption", b =>
+                {
+                    b.HasOne("OnlineEducation.Api.Models.Option", "Option")
+                        .WithMany()
+                        .HasForeignKey("OptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineEducation.Api.Models.StudentAnswer", "StudentAnswer")
+                        .WithMany("SelectedOptions")
+                        .HasForeignKey("StudentAnswerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Option");
+
+                    b.Navigation("StudentAnswer");
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.StudentSubmission", b =>
+                {
+                    b.HasOne("OnlineEducation.Api.Models.User", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineEducation.Api.Models.Test", "Test")
+                        .WithMany()
+                        .HasForeignKey("TestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Student");
+
+                    b.Navigation("Test");
                 });
 
             modelBuilder.Entity("OnlineEducation.Api.Models.Test", b =>
@@ -619,6 +856,26 @@ namespace OnlineEducation.Api.Migrations
                     b.Navigation("Lessons");
 
                     b.Navigation("Test");
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.Question", b =>
+                {
+                    b.Navigation("Options");
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.StudentAnswer", b =>
+                {
+                    b.Navigation("SelectedOptions");
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.StudentSubmission", b =>
+                {
+                    b.Navigation("Answers");
+                });
+
+            modelBuilder.Entity("OnlineEducation.Api.Models.Test", b =>
+                {
+                    b.Navigation("Questions");
                 });
 
             modelBuilder.Entity("OnlineEducation.Api.Models.User", b =>

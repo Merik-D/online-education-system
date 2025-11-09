@@ -2,18 +2,22 @@
 using OnlineEducation.Api.Data;
 using OnlineEducation.Api.Dtos.Courses;
 using OnlineEducation.Api.Dtos.Learning;
+using OnlineEducation.Api.Enums;
 using OnlineEducation.Api.Interfaces;
 using OnlineEducation.Api.Models;
+using OnlineEducation.Api.Models.Lessons;
 
 namespace OnlineEducation.Api.Services;
 
 public class LearningService : ILearningService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IGradingStrategyFactory _strategyFactory;
 
-    public LearningService(ApplicationDbContext context)
+    public LearningService(ApplicationDbContext context, IGradingStrategyFactory strategyFactory)
     {
         _context = context;
+        _strategyFactory = strategyFactory;
     }
 
     public async Task EnrollInCourseAsync(int courseId, int userId)
@@ -89,11 +93,70 @@ public class LearningService : ILearningService
                         Id = l.Id,
                         Title = l.Title,
                         Order = l.Order,
-                        VideoUrl = l.VideoUrl,
-                        TextContent = l.TextContent
+                        VideoUrl = (l as VideoLesson) != null ? ((VideoLesson)l).VideoUrl : null,
+                        TextContent = (l as TextLesson) != null ? ((TextLesson)l).TextContent : null
                     }).ToList()
                 }).ToList()
             })
             .FirstOrDefaultAsync();
+    }
+
+    public async Task<GradingResultDto> SubmitTestAsync(int testId, int userId, TestSubmissionDto submissionDto)
+    {
+        var test = await _context.Tests
+            .Include(t => t.Module)
+            .FirstOrDefaultAsync(t => t.Id == testId);
+
+        if (test == null)
+        {
+            throw new KeyNotFoundException("Test not found.");
+        }
+
+        var enrollment = await _context.Enrollments
+            .FirstOrDefaultAsync(e => e.StudentId == userId && e.CourseId == test.Module.CourseId);
+
+        if (enrollment == null)
+        {
+            throw new InvalidOperationException("You are not enrolled in the course that contains this test.");
+        }
+
+        var submission = new StudentSubmission
+        {
+            StudentId = userId,
+            TestId = testId,
+            Status = SubmissionStatus.Pending
+        };
+
+        foreach (var answerDto in submissionDto.Answers)
+        {
+            var studentAnswer = new StudentAnswer
+            {
+                QuestionId = answerDto.QuestionId,
+                AnswerText = answerDto.AnswerText
+            };
+
+            foreach (var optionId in answerDto.SelectedOptionIds)
+            {
+                studentAnswer.SelectedOptions.Add(new StudentAnswerOption
+                {
+                    OptionId = optionId
+                });
+            }
+            submission.Answers.Add(studentAnswer);
+        }
+
+        await _context.StudentSubmissions.AddAsync(submission);
+
+        var strategy = _strategyFactory.GetStrategy(test.StrategyType);
+        await strategy.GradeAsync(submission);
+
+        await _context.SaveChangesAsync();
+
+        return new GradingResultDto
+        {
+            SubmissionId = submission.Id,
+            Status = submission.Status,
+            Score = submission.Score
+        };
     }
 }

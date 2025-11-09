@@ -9,4 +9,5 @@ public interface ILearningService
     Task EnrollInCourseAsync(int courseId, int userId);
     Task<IEnumerable<CourseDto>> GetMyCoursesAsync(int userId);
     Task<MyCourseDetailsDto?> GetCourseDetailsAsync(int courseId, int userId);
+    Task<GradingResultDto> SubmitTestAsync(int testId, int userId, TestSubmissionDto submissionDto);
 }

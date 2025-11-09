@@ -1,9 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using OnlineEducation.Api.Enums;
 
-namespace OnlineEducation.Api.Models;
+namespace OnlineEducation.Api.Models.Lessons;
 
-public class Lesson
+public abstract class Lesson
 {
     public int Id { get; set; }
 
@@ -12,8 +13,7 @@ public class Lesson
 
     public int Order { get; set; }
 
-    public string? VideoUrl { get; set; }
-    public string? TextContent { get; set; }
+    public LessonType Type { get; protected set; }
 
     public int ModuleId { get; set; }
     [ForeignKey("ModuleId")]
