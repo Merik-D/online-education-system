@@ -23,5 +23,27 @@ public class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<Course>()
+            .HasOne(c => c.Instructor)
+            .WithMany(u => u.CoursesAsInstructor)
+            .HasForeignKey(c => c.InstructorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Enrollment>()
+            .HasOne(e => e.Student)
+            .WithMany(u => u.Enrollments)
+            .HasForeignKey(e => e.StudentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Review>()
+            .HasOne(r => r.Student)
+            .WithMany(u => u.Reviews)
+            .HasForeignKey(r => r.StudentId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
