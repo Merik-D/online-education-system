@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../services/authService';
+import { login as authLogin } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 import {
   Container,
   TextField,
@@ -15,15 +16,15 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
-      const data = await login({ email, password });
-      localStorage.setItem('token', data.token);
-      // TODO: Зберегти юзера в Context
-      navigate('/my-courses'); // Перекинемо на "Мої курси"
+      const data = await authLogin({ email, password });
+      login(data);
+      navigate('/my-courses');
     } catch (err) {
       setError('Неправильний логін або пароль.');
     }
