@@ -75,4 +75,26 @@ public class LearningController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [HttpGet("lessons/{lessonId}")]
+    public async Task<ActionResult<LessonDto>> GetLessonDetails(int lessonId)
+    {
+        var userId = User.GetUserId();
+
+        try
+        {
+            var lessonDto = await _learningService.GetLessonDetailsAsync(lessonId, userId);
+
+            if (lessonDto == null)
+            {
+                return Forbid("You are not enrolled in the course for this lesson.");
+            }
+
+            return Ok(lessonDto);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
 }
