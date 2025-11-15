@@ -159,4 +159,41 @@ public class LearningService : ILearningService
             Score = submission.Score
         };
     }
+
+    public async Task<LessonDto?> GetLessonDetailsAsync(int lessonId, int userId)
+    {
+        var lesson = await _context.Lessons
+            .FirstOrDefaultAsync(l => l.Id == lessonId);
+
+        if (lesson == null)
+        {
+            throw new KeyNotFoundException("Lesson not found");
+        }
+
+        var module = await _context.Modules.FindAsync(lesson.ModuleId);
+        if (module == null)
+        {
+            throw new KeyNotFoundException("Module not found");
+        }
+
+        var enrollment = await _context.Enrollments
+            .FirstOrDefaultAsync(e => e.StudentId == userId && e.CourseId == module.CourseId);
+
+        if (enrollment == null)
+        {
+            return null;
+        }
+
+        var lessonDto = new LessonDto
+        {
+            Id = lesson.Id,
+            Title = lesson.Title,
+            Order = lesson.Order,
+            Type = lesson.Type,
+            VideoUrl = (lesson as VideoLesson) != null ? ((VideoLesson)lesson).VideoUrl : null,
+            TextContent = (lesson as TextLesson) != null ? ((TextLesson)lesson).TextContent : null
+        };
+
+        return lessonDto;
+    }
 }
