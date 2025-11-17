@@ -4,6 +4,7 @@ namespace OnlineEducation.Api.Interfaces;
 
 public interface IAdminService
 {
-    Task<IEnumerable<PendingSubmissionDto>> GetPendingSubmissionsAsync();
-    Task<bool> GradeSubmissionAsync(int submissionId, GradeSubmissionDto gradeDto);
+    Task<UserStatsDto> GetUserStatsAsync();
+    Task<IEnumerable<UserDto>> GetAllUsersAsync();
+    Task<bool> ToggleUserBlockAsync(int userId);
 }

@@ -7,7 +7,7 @@ namespace OnlineEducation.Api.Controllers;
 
 [Route("api/admin")]
 [ApiController]
-[Authorize(Roles = "Admin,Instructor")]
+[Authorize(Roles = "Admin")]
 public class AdminController : ControllerBase
 {
     private readonly IAdminService _adminService;
@@ -17,22 +17,28 @@ public class AdminController : ControllerBase
         _adminService = adminService;
     }
 
-    [HttpGet("submissions/pending")]
-    public async Task<ActionResult<IEnumerable<PendingSubmissionDto>>> GetPendingSubmissions()
+    [HttpGet("stats")]
+    public async Task<ActionResult<UserStatsDto>> GetStats()
     {
-        var submissions = await _adminService.GetPendingSubmissionsAsync();
-        return Ok(submissions);
+        var stats = await _adminService.GetUserStatsAsync();
+        return Ok(stats);
     }
 
-    [HttpPost("submissions/{id}/grade")]
-    public async Task<IActionResult> GradeSubmission(int id, [FromBody] GradeSubmissionDto gradeDto)
+    [HttpGet("users")]
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
     {
-        var result = await _adminService.GradeSubmissionAsync(id, gradeDto);
+        var users = await _adminService.GetAllUsersAsync();
+        return Ok(users);
+    }
+
+    [HttpPost("users/{id}/toggle-block")]
+    public async Task<IActionResult> ToggleBlockUser(int id)
+    {
+        var result = await _adminService.ToggleUserBlockAsync(id);
         if (!result)
         {
-            return NotFound(new { message = "Submission not found or already graded." });
+            return NotFound(new { message = "User not found." });
         }
-
-        return Ok(new { message = "Submission graded successfully." });
+        return Ok(new { message = "User block status updated." });
     }
 }

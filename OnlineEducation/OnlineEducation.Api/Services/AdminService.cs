@@ -1,67 +1,72 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using OnlineEducation.Api.Data;
 using OnlineEducation.Api.Dtos.Admin;
-using OnlineEducation.Api.Enums;
 using OnlineEducation.Api.Interfaces;
+using OnlineEducation.Api.Models;
 
 namespace OnlineEducation.Api.Services;
 
 public class AdminService : IAdminService
 {
     private readonly ApplicationDbContext _context;
+    private readonly UserManager<User> _userManager;
 
-    public AdminService(ApplicationDbContext context)
+    public AdminService(ApplicationDbContext context, UserManager<User> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
 
-    public async Task<IEnumerable<PendingSubmissionDto>> GetPendingSubmissionsAsync()
+    public async Task<UserStatsDto> GetUserStatsAsync()
     {
-        return await _context.StudentSubmissions
-            .Where(s => s.Status == SubmissionStatus.PendingReview)
-            .Include(s => s.Test)
-            .Include(s => s.Student)
-            .Include(s => s.Answers)
-                .ThenInclude(a => a.Question)
-            .Include(s => s.Answers)
-                .ThenInclude(a => a.SelectedOptions)
-                    .ThenInclude(so => so.Option)
-            .OrderBy(s => s.SubmittedAt)
-            .Select(s => new PendingSubmissionDto
+        var students = await _userManager.GetUsersInRoleAsync("Student");
+        var instructors = await _userManager.GetUsersInRoleAsync("Instructor");
+        var admins = await _userManager.GetUsersInRoleAsync("Admin");
+
+        return new UserStatsDto
+        {
+            TotalStudents = students.Count,
+            TotalInstructors = instructors.Count,
+            TotalAdmins = admins.Count
+        };
+    }
+
+    public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
+    {
+        var users = await _userManager.Users.ToListAsync();
+        var userDtos = new List<UserDto>();
+
+        foreach (var user in users)
+        {
+            userDtos.Add(new UserDto
             {
-                SubmissionId = s.Id,
-                TestTitle = s.Test.Title,
-                StudentName = s.Student.FullName,
-                SubmittedAt = s.SubmittedAt,
-                Answers = s.Answers.Select(a => new StudentAnswerDto
-                {
-                    QuestionId = a.QuestionId,
-                    QuestionText = a.Question.Text,
-                    QuestionType = a.Question.Type,
-                    AnswerText = a.AnswerText,
-                    SelectedOptions = a.SelectedOptions.Select(so => new SelectedOptionDto
-                    {
-                        OptionId = so.OptionId,
-                        OptionText = so.Option.Text
-                    }).ToList()
-                }).ToList()
-            })
-            .ToListAsync();
+                Id = user.Id,
+                FullName = user.FullName,
+                Email = user.Email,
+                IsLockedOut = await _userManager.IsLockedOutAsync(user),
+                Roles = (await _userManager.GetRolesAsync(user)).ToList()
+            });
+        }
+        return userDtos;
     }
 
-    public async Task<bool> GradeSubmissionAsync(int submissionId, GradeSubmissionDto gradeDto)
+    public async Task<bool> ToggleUserBlockAsync(int userId)
     {
-        var submission = await _context.StudentSubmissions.FindAsync(submissionId);
-
-        if (submission == null || submission.Status != SubmissionStatus.PendingReview)
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
         {
             return false;
         }
 
-        submission.Status = SubmissionStatus.Graded;
-        submission.Score = gradeDto.Score;
-
-        await _context.SaveChangesAsync();
+        if (await _userManager.IsLockedOutAsync(user))
+        {
+            await _userManager.SetLockoutEndDateAsync(user, null);
+        }
+        else
+        {
+            await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddYears(100));
+        }
         return true;
     }
 }
