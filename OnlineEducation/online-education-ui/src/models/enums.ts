@@ -20,3 +20,9 @@ export enum SubmissionStatus {
   Graded = "Graded",
   PendingReview = "PendingReview",
 }
+
+export enum CourseLevel {
+  Beginner = "Beginner",
+  Intermediate = "Intermediate",
+  Advanced = "Advanced",
+}

@@ -27,7 +27,6 @@ const Navbar = () => {
           </Button>
           {auth ? (
             <>
-              {/* --- ОНОВЛЕНА ЛОГІКА РОЛЕЙ --- */}
               
               {isAdmin() && (
                 <Button color="inherit" component={Link} to="/admin/dashboard">
@@ -36,9 +35,14 @@ const Navbar = () => {
               )}
               
               {isInstructor() && (
-                 <Button color="inherit" component={Link} to="/instructor/grade-submissions">
-                  Перевірка
-                </Button>
+                <>
+                  <Button color="inherit" component={Link} to="/instructor/dashboard">
+                    Мої Курси (Викл.)
+                  </Button>
+                  <Button color="inherit" component={Link} to="/instructor/grade-submissions">
+                    Перевірка
+                  </Button>
+                </>
               )}
 
               {isStudent() && (
