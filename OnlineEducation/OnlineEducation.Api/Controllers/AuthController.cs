@@ -1,11 +1,12 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OnlineEducation.Api.Dtos.Auth;
 using OnlineEducation.Api.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace OnlineEducation.Api.Controllers;
 
@@ -57,15 +58,22 @@ public class AuthController : ControllerBase
             await _roleManager.CreateAsync(new IdentityRole<int>("Student"));
         }
 
-        // Робимо першого юзера Адміном, решту - Студентами
-        var adminRoleExists = (await _userManager.GetUsersInRoleAsync("Admin")).Any();
-        if (!adminRoleExists)
+        var isFirstUser = !await _userManager.Users.AnyAsync();
+
+        if (isFirstUser)
         {
             await _userManager.AddToRoleAsync(user, "Admin");
         }
         else
         {
-            await _userManager.AddToRoleAsync(user, "Student");
+            if (registerDto.Role == "Instructor")
+            {
+                await _userManager.AddToRoleAsync(user, "Instructor");
+            }
+            else
+            {
+                await _userManager.AddToRoleAsync(user, "Student");
+            }
         }
 
         return Ok(new { message = "User created successfully!" });

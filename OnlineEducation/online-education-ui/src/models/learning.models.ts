@@ -1,4 +1,4 @@
-import { LessonType } from './enums';
+import { LessonType, QuestionType, SubmissionStatus } from './enums';
 
 export interface LessonDto {
   id: number;
@@ -37,4 +37,41 @@ export interface GradingResultDto {
   submissionId: number;
   status: number;
   score?: number;
+}
+
+export interface OptionDto {
+  id: number;
+  text: string;
+}
+
+export interface QuestionDto {
+  id: number;
+  text: string;
+  type: QuestionType;
+  order: number;
+  options: OptionDto[];
+}
+
+export interface TestDetailsDto {
+  id: number;
+  title: string;
+  questions: QuestionDto[];
+}
+
+export interface AnswerDetailDto {
+  questionId: number;
+  questionText: string;
+  questionType: QuestionType;
+  studentAnswerText?: string;
+  studentSelectedOptions: OptionDto[];
+  correctOptions: OptionDto[];
+  isCorrect: boolean;
+}
+
+export interface SubmissionResultDto {
+  submissionId: number;
+  testTitle: string;
+  status: SubmissionStatus;
+  score?: number;
+  answers: AnswerDetailDto[];
 }

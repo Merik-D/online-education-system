@@ -8,12 +8,17 @@ import {
   Typography,
   Box,
   Alert,
+  Select, // <-- 1. ІМПОРТ
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 
 const RegisterPage = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('Student'); // <-- 2. НОВИЙ СТАН
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -21,8 +26,9 @@ const RegisterPage = () => {
     e.preventDefault();
     setError('');
     try {
-      await register({ fullName, email, password });
-      navigate('/login'); // Перекинемо на логін
+      // 3. Передаємо 'role' в сервіс
+      await register({ fullName, email, password, role });
+      navigate('/login');
     } catch (err: any) {
       if (err.response && err.response.data.message) {
         setError(err.response.data.message);
@@ -48,6 +54,7 @@ const RegisterPage = () => {
           Реєстрація
         </Typography>
         {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
+        
         <TextField
           margin="normal"
           required
@@ -56,6 +63,7 @@ const RegisterPage = () => {
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
         />
+        
         <TextField
           margin="normal"
           required
@@ -65,6 +73,7 @@ const RegisterPage = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
+        
         <TextField
           margin="normal"
           required
@@ -74,6 +83,21 @@ const RegisterPage = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+
+        {/* --- 4. ДОДАНО ВИБІР РОЛІ --- */}
+        <FormControl fullWidth margin="normal" required>
+          <InputLabel>Я...</InputLabel>
+          <Select
+            value={role}
+            label="Я..."
+            onChange={(e) => setRole(e.target.value)}
+          >
+            <MenuItem value={"Student"}>Студент</MenuItem>
+            <MenuItem value={"Instructor"}>Викладач</MenuItem>
+          </Select>
+        </FormControl>
+        {/* --- КІНЕЦЬ БЛОКУ --- */}
+
         <Button
           type="submit"
           fullWidth

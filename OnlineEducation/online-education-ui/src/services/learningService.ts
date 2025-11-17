@@ -1,5 +1,5 @@
 import { CourseDto } from '../models/course.models';
-import { MyCourseDetailsDto, TestSubmissionDto, GradingResultDto, LessonDto } from '../models/learning.models';
+import { MyCourseDetailsDto, TestSubmissionDto, GradingResultDto, LessonDto, TestDetailsDto, SubmissionResultDto } from '../models/learning.models';
 import api from './api';
 
 export const enrollInCourse = async (courseId: number) => {
@@ -23,5 +23,10 @@ export const submitTest = async (testId: number, data: TestSubmissionDto): Promi
 
 export const getLessonById = async (lessonId: number): Promise<LessonDto> => {
   const response = await api.get<LessonDto>(`/learning/lessons/${lessonId}`);
+  return response.data;
+};
+
+export const getTestDetails = async (testId: number): Promise<TestDetailsDto> => {
+  const response = await api.get<TestDetailsDto>(`/learning/test/${testId}`);
   return response.data;
 };

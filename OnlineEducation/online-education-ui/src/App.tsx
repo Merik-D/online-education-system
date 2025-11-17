@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import InstructorRoute from './components/InstructorRoute';
+import AdminOnlyRoute from './components/AdminOnlyRoute';
 
 import HomePage from './pages/HomePage';
 import CourseCatalogPage from './pages/CourseCatalogPage';
@@ -11,6 +13,8 @@ import RegisterPage from './pages/RegisterPage';
 import MyCoursesPage from './pages/MyCoursesPage';
 import CoursePlayerPage from './pages/CoursePlayerPage';
 import TestPage from './pages/TestPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminGradeSubmissionsPage from './pages/AdminGradeSubmissionsPage';
 import LessonPage from './pages/LessonPage';
 
 function App() {
@@ -27,14 +31,22 @@ function App() {
 
           <Route element={<ProtectedRoute />}>
             <Route path="/my-courses" element={<MyCoursesPage />} />
-            <Route path="/player/:id" element={<CoursePlayerPage />} />
+            <Route path="/my-courses/:id" element={<CoursePlayerPage />} />
             <Route path="/lesson/:lessonId" element={<LessonPage />} />
             <Route path="/test/:id" element={<TestPage />} />
           </Route>
+
+          <Route element={<InstructorRoute />}>
+            <Route path="/instructor/grade-submissions" element={<AdminGradeSubmissionsPage />} />
+          </Route>
+
+          <Route element={<AdminOnlyRoute />}>
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+          </Route>
+
         </Routes>
       </div>
     </BrowserRouter>
   );
 }
-
 export default App;

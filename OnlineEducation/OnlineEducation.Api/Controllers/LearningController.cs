@@ -97,4 +97,27 @@ public class LearningController : ControllerBase
             return NotFound(new { message = ex.Message });
         }
     }
+
+    [HttpGet("test/{testId}")]
+    public async Task<ActionResult<TestDetailsDto>> GetTestDetails(int testId)
+    {
+        var userId = User.GetUserId();
+        try
+        {
+            var testDetails = await _learningService.GetTestDetailsAsync(testId, userId);
+            if (testDetails == null)
+            {
+                return Forbid("You are not enrolled in this course.");
+            }
+            return Ok(testDetails);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
 }
