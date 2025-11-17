@@ -30,7 +30,6 @@ const LessonPage = () => {
     fetchLesson();
   }, [lessonId]);
 
-  // --- 2. Функція для безпечного витягування ID ---
   const getYouTubeId = (url: string): string | null => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;

@@ -16,7 +16,7 @@ import {
 
 const CourseDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { isLoggedIn } = useAuth();
+  const { auth, isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
   const [course, setCourse] = useState<CourseDto | null>(null);
@@ -24,6 +24,7 @@ const CourseDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const isStudent = auth?.roles.includes('Student') ?? false;
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -90,7 +91,7 @@ const CourseDetailsPage = () => {
         {course.description}
       </Typography>
 
-      {isLoggedIn() && (
+      {isLoggedIn() && isStudent && (
         <Box sx={{ mt: 4 }}>
           {isEnrolled ? (
             <Button

@@ -2,9 +2,10 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
+import NotificationsMenu from './NotificationsMenu';
 
 const Navbar = () => {
-  const { auth, logout } = useAuth();
+  const { auth, logout, isAdmin, isInstructor, isStudent } = useAuth(); // <-- Отримали нові ролі
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -20,15 +21,38 @@ const Navbar = () => {
             OnlineEducation
           </Link>
         </Typography>
-        <Box>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Button color="inherit" component={Link} to="/courses">
             Каталог
           </Button>
           {auth ? (
             <>
-              <Button color="inherit" component={Link} to="/my-courses">
-                Мої Курси
-              </Button>
+              {/* --- ОНОВЛЕНА ЛОГІКА РОЛЕЙ --- */}
+              
+              {isAdmin() && (
+                <Button color="inherit" component={Link} to="/admin/dashboard">
+                  Адмін
+                </Button>
+              )}
+              
+              {isInstructor() && (
+                 <Button color="inherit" component={Link} to="/instructor/grade-submissions">
+                  Перевірка
+                </Button>
+              )}
+
+              {isStudent() && (
+                <Button color="inherit" component={Link} to="/my-courses">
+                  Мої Курси
+                </Button>
+              )}
+
+              {isStudent() && <NotificationsMenu />}
+              
+              <Typography sx={{ mx: 2 }}>
+                Вітаю, {auth.fullName}
+              </Typography>
+              
               <Button color="inherit" onClick={handleLogout}>
                 Вийти
               </Button>

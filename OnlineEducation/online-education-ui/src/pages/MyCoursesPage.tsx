@@ -54,7 +54,7 @@ const MyCoursesPage = () => {
                   size="small"
                   color="primary"
                   component={Link}
-                  to={`/player/${course.id}`}
+                  to={`/my-courses/${course.id}`}
                 >
                   Продовжити
                 </Button>
