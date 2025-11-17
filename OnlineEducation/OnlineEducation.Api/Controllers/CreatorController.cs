@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OnlineEducation.Api.Data;
 using OnlineEducation.Api.Dtos.Creator;
 using OnlineEducation.Api.Extensions;
-using OnlineEducation.Api.Models;
-using OnlineEducation.Api.Models.Lessons;
+using OnlineEducation.Api.Interfaces;
 
 namespace OnlineEducation.Api.Controllers;
 
@@ -14,130 +11,126 @@ namespace OnlineEducation.Api.Controllers;
 [Authorize(Roles = "Instructor")]
 public class CreatorController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ICreatorService _creatorService;
 
-    public CreatorController(ApplicationDbContext context)
+    public CreatorController(ICreatorService creatorService)
     {
-        _context = context;
-    }
-
-    private async Task<(bool, IActionResult?)> CheckOwnership(int courseId)
-    {
-        var userId = User.GetUserId();
-        var userRoles = User.FindAll(c => c.Type.EndsWith("claims/role")).Select(c => c.Value).ToList();
-
-        if (userRoles.Contains("Admin"))
-        {
-            return (true, null);
-        }
-
-        var isOwner = await _context.Courses
-            .AnyAsync(c => c.Id == courseId && c.InstructorId == userId);
-
-        if (!isOwner)
-        {
-            return (false, Forbid("You do not own this course."));
-        }
-
-        return (true, null);
+        _creatorService = creatorService;
     }
 
     [HttpPost("courses/{courseId}/modules")]
     public async Task<IActionResult> CreateModule(int courseId, [FromBody] ModuleCreateDto moduleDto)
     {
-        var (isOwner, errorResult) = await CheckOwnership(courseId);
-        if (!isOwner) return errorResult;
+        var (success, error, result) = await _creatorService.CreateModuleAsync(courseId, moduleDto, User.GetUserId());
 
-        var module = new Module
-        {
-            Title = moduleDto.Title,
-            Order = moduleDto.Order,
-            CourseId = courseId
-        };
+        if (!success && error == "You do not own this course.") return Forbid(error);
+        if (!success) return BadRequest(new { message = error });
 
-        await _context.Modules.AddAsync(module);
-        await _context.SaveChangesAsync();
-
-        return Ok(module);
+        return Ok(result);
     }
 
     [HttpPost("modules/{moduleId}/lessons")]
     public async Task<IActionResult> CreateLesson(int moduleId, [FromBody] LessonCreateDto lessonDto)
     {
-        var module = await _context.Modules.FindAsync(moduleId);
-        if (module == null) return NotFound("Module not found.");
+        var (success, error, result) = await _creatorService.CreateLessonAsync(moduleId, lessonDto, User.GetUserId());
 
-        var (isOwner, errorResult) = await CheckOwnership(module.CourseId);
-        if (!isOwner) return errorResult;
+        if (!success && error == "You do not own this course.") return Forbid(error);
+        if (!success) return BadRequest(new { message = error });
 
-        Lesson lesson;
-        if (lessonDto.Type == OnlineEducation.Api.Enums.LessonType.Video)
-        {
-            lesson = new VideoLesson { VideoUrl = lessonDto.VideoUrl };
-        }
-        else
-        {
-            lesson = new TextLesson { TextContent = lessonDto.TextContent };
-        }
-
-        lesson.Title = lessonDto.Title;
-        lesson.Order = lessonDto.Order;
-        lesson.ModuleId = moduleId;
-
-        await _context.Lessons.AddAsync(lesson);
-        await _context.SaveChangesAsync();
-        return Ok(lesson);
+        return Ok(result);
     }
 
     [HttpPost("modules/{moduleId}/test")]
     public async Task<IActionResult> CreateTest(int moduleId, [FromBody] TestCreateDto testDto)
     {
-        var module = await _context.Modules.FindAsync(moduleId);
-        if (module == null) return NotFound("Module not found.");
+        var (success, error, result) = await _creatorService.CreateTestAsync(moduleId, testDto, User.GetUserId());
 
-        var (isOwner, errorResult) = await CheckOwnership(module.CourseId);
-        if (!isOwner) return errorResult;
+        if (!success && error == "You do not own this course.") return Forbid(error);
+        if (!success) return BadRequest(new { message = error });
 
-        var test = new Test
-        {
-            Title = testDto.Title,
-            StrategyType = testDto.StrategyType,
-            ModuleId = moduleId
-        };
-
-        await _context.Tests.AddAsync(test);
-        await _context.SaveChangesAsync();
-        return Ok(test);
+        return Ok(result);
     }
 
     [HttpPost("tests/{testId}/questions")]
     public async Task<IActionResult> CreateQuestion(int testId, [FromBody] QuestionCreateDto questionDto)
     {
-        var test = await _context.Tests.Include(t => t.Module).FirstOrDefaultAsync(t => t.Id == testId);
-        if (test == null) return NotFound("Test not found.");
+        var (success, error, result) = await _creatorService.CreateQuestionAsync(testId, questionDto, User.GetUserId());
 
-        var (isOwner, errorResult) = await CheckOwnership(test.Module.CourseId);
-        if (!isOwner) return errorResult;
+        if (!success && error == "You do not own this course.") return Forbid(error);
+        if (!success) return BadRequest(new { message = error });
 
-        var question = new Question
-        {
-            Text = questionDto.Text,
-            Type = questionDto.Type,
-            Order = questionDto.Order,
-            TestId = testId
-        };
+        return Ok(result);
+    }
 
-        foreach (var optDto in questionDto.Options)
-        {
-            question.Options.Add(new Option
-            {
-                Text = optDto.Text,
-                IsCorrect = optDto.IsCorrect
-            });
-        }
+    [HttpPut("courses/{courseId}")]
+    public async Task<IActionResult> UpdateCourse(int courseId, [FromBody] CourseUpdateDto dto)
+    {
+        var (success, error, result) = await _creatorService.UpdateCourseAsync(courseId, dto, User.GetUserId());
+        if (!success && error == "You do not own this course.") return Forbid(error);
+        if (!success) return NotFound(new { message = error });
+        return Ok(result);
+    }
 
-        await _context.Questions.AddAsync(question);
-        await _context.SaveChangesAsync();
-        return Ok(question);
+    [HttpPut("modules/{moduleId}")]
+    public async Task<IActionResult> UpdateModule(int moduleId, [FromBody] ModuleCreateDto dto)
+    {
+        var (success, error, result) = await _creatorService.UpdateModuleAsync(moduleId, dto, User.GetUserId());
+        if (!success && error == "You do not own this course.") return Forbid(error);
+        if (!success) return NotFound(new { message = error });
+        return Ok(result);
+    }
+
+    [HttpPut("lessons/{lessonId}")]
+    public async Task<IActionResult> UpdateLesson(int lessonId, [FromBody] LessonCreateDto dto)
+    {
+        var (success, error, result) = await _creatorService.UpdateLessonAsync(lessonId, dto, User.GetUserId());
+        if (!success && error == "You do not own this course.") return Forbid(error);
+        if (!success) return BadRequest(new { message = error }); // Може бути 404 або 400
+        return Ok(result);
+    }
+
+    [HttpPut("tests/{testId}")]
+    public async Task<IActionResult> UpdateTest(int testId, [FromBody] TestCreateDto dto)
+    {
+        var (success, error, result) = await _creatorService.UpdateTestAsync(testId, dto, User.GetUserId());
+        if (!success && error == "You do not own this course.") return Forbid(error);
+        if (!success) return NotFound(new { message = error });
+        return Ok(result);
+    }
+
+    [HttpDelete("courses/{courseId}")]
+    public async Task<IActionResult> DeleteCourse(int courseId)
+    {
+        var (success, error) = await _creatorService.DeleteCourseAsync(courseId, User.GetUserId());
+        if (!success && error == "You do not own this course.") return Forbid(error);
+        if (!success) return NotFound(new { message = error });
+        return NoContent();
+    }
+
+    [HttpDelete("modules/{moduleId}")]
+    public async Task<IActionResult> DeleteModule(int moduleId)
+    {
+        var (success, error) = await _creatorService.DeleteModuleAsync(moduleId, User.GetUserId());
+        if (!success && error == "You do not own this course.") return Forbid(error);
+        if (!success) return NotFound(new { message = error });
+        return NoContent();
+    }
+
+    [HttpDelete("lessons/{lessonId}")]
+    public async Task<IActionResult> DeleteLesson(int lessonId)
+    {
+        var (success, error) = await _creatorService.DeleteLessonAsync(lessonId, User.GetUserId());
+        if (!success && error == "You do not own this course.") return Forbid(error);
+        if (!success) return NotFound(new { message = error });
+        return NoContent();
+    }
+
+    [HttpDelete("tests/{testId}")]
+    public async Task<IActionResult> DeleteTest(int testId)
+    {
+        var (success, error) = await _creatorService.DeleteTestAsync(testId, User.GetUserId());
+        if (!success && error == "You do not own this course.") return Forbid(error);
+        if (!success) return NotFound(new { message = error });
+        return NoContent();
     }
 }

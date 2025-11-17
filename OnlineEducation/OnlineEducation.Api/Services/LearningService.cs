@@ -103,21 +103,19 @@ public class LearningService : ILearningService
 
     public async Task<GradingResultDto> SubmitTestAsync(int testId, int userId, TestSubmissionDto submissionDto)
     {
-        var test = await _context.Tests
-            .Include(t => t.Module)
-            .FirstOrDefaultAsync(t => t.Id == testId);
-
-        if (test == null)
-        {
-            throw new KeyNotFoundException("Test not found.");
-        }
+        var test = await _context.Tests.FindAsync(testId);
+        if (test == null) throw new KeyNotFoundException("Test not found.");
 
         var enrollment = await _context.Enrollments
-            .FirstOrDefaultAsync(e => e.StudentId == userId && e.CourseId == test.Module.CourseId);
+            .FirstOrDefaultAsync(e => e.StudentId == userId && e.Course.Modules.Any(m => m.Test != null && m.Test.Id == testId));
+        if (enrollment == null) throw new InvalidOperationException("You are not enrolled in this course.");
 
-        if (enrollment == null)
+        var existingSubmission = await _context.StudentSubmissions
+            .FirstOrDefaultAsync(s => s.StudentId == userId && s.TestId == testId);
+
+        if (existingSubmission != null)
         {
-            throw new InvalidOperationException("You are not enrolled in the course that contains this test.");
+            throw new InvalidOperationException("You have already submitted this test.");
         }
 
         var submission = new StudentSubmission
@@ -195,5 +193,54 @@ public class LearningService : ILearningService
         };
 
         return lessonDto;
+    }
+
+    public async Task<TestDetailsDto?> GetTestDetailsAsync(int testId, int userId)
+    {
+        var test = await _context.Tests
+            .Include(t => t.Module)
+            .FirstOrDefaultAsync(t => t.Id == testId);
+
+        if (test == null)
+        {
+            throw new KeyNotFoundException("Test not found.");
+        }
+
+        var enrollment = await _context.Enrollments
+            .FirstOrDefaultAsync(e => e.StudentId == userId && e.CourseId == test.Module.CourseId);
+
+        if (enrollment == null)
+        {
+            return null;
+        }
+
+        var existingSubmission = await _context.StudentSubmissions
+            .FirstOrDefaultAsync(s => s.StudentId == userId && s.TestId == testId);
+
+        if (existingSubmission != null)
+        {
+            throw new InvalidOperationException("You have already submitted this test.");
+        }
+
+        return await _context.Tests
+            .Where(t => t.Id == testId)
+            .Select(t => new TestDetailsDto
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Questions = t.Questions.OrderBy(q => q.Order).Select(q => new QuestionDto
+                {
+                    Id = q.Id,
+                    Text = q.Text,
+                    Type = q.Type,
+                    Order = q.Order,
+                    Options = q.Options.Select(o => new OptionDto
+                    {
+                        Id = o.Id,
+                        Text = o.Text
+                    }).ToList()
+                }).ToList()
+            })
+            .FirstOrDefaultAsync();
     }
 }
