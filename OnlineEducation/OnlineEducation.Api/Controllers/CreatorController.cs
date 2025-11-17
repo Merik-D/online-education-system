@@ -18,6 +18,23 @@ public class CreatorController : ControllerBase
         _creatorService = creatorService;
     }
 
+    [HttpPost("courses")]
+    public async Task<IActionResult> CreateCourse([FromBody] CourseCreateDto dto)
+    {
+        var (success, error, result) = await _creatorService.CreateCourseAsync(dto, User.GetUserId());
+
+        if (!success) return BadRequest(new { message = error });
+
+        return Ok(result);
+    }
+
+    [HttpGet("my-courses")]
+    public async Task<IActionResult> GetMyCourses()
+    {
+        var courses = await _creatorService.GetMyCoursesAsync(User.GetUserId());
+        return Ok(courses);
+    }
+
     [HttpPost("courses/{courseId}/modules")]
     public async Task<IActionResult> CreateModule(int courseId, [FromBody] ModuleCreateDto moduleDto)
     {

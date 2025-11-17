@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnlineEducation.Api.Data;
+using OnlineEducation.Api.Dtos.Courses;
 using OnlineEducation.Api.Dtos.Creator;
 using OnlineEducation.Api.Interfaces;
 using OnlineEducation.Api.Models;
@@ -266,5 +267,38 @@ public class CreatorService : ICreatorService
         _context.Tests.Remove(test);
         await _context.SaveChangesAsync();
         return (true, null);
+    }
+
+    public async Task<IEnumerable<CourseDto>> GetMyCoursesAsync(int instructorId)
+    {
+        return await _context.Courses
+            .Where(c => c.InstructorId == instructorId)
+            .Select(c => new CourseDto
+            {
+                Id = c.Id,
+                Title = c.Title,
+                Description = c.Description,
+                Level = c.Level.ToString(),
+                InstructorId = c.InstructorId,
+                CategoryId = c.CategoryId
+            })
+            .ToListAsync();
+    }
+
+    public async Task<(bool, string?, object?)> CreateCourseAsync(CourseCreateDto dto, int instructorId)
+    {
+        var course = new Course
+        {
+            Title = dto.Title,
+            Description = dto.Description,
+            Level = dto.Level,
+            CategoryId = dto.CategoryId,
+            InstructorId = instructorId
+        };
+
+        await _context.Courses.AddAsync(course);
+        await _context.SaveChangesAsync();
+
+        return (true, null, course);
     }
 }

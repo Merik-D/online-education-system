@@ -1,4 +1,5 @@
-﻿using OnlineEducation.Api.Dtos.Creator;
+﻿using OnlineEducation.Api.Dtos.Courses;
+using OnlineEducation.Api.Dtos.Creator;
 
 namespace OnlineEducation.Api.Interfaces;
 
@@ -20,4 +21,7 @@ public interface ICreatorService
 
     Task<(bool, string?, object?)> UpdateTestAsync(int testId, TestCreateDto dto, int instructorId);
     Task<(bool, string?)> DeleteTestAsync(int testId, int instructorId);
+
+    Task<(bool, string?, object?)> CreateCourseAsync(CourseCreateDto dto, int instructorId);
+    Task<IEnumerable<CourseDto>> GetMyCoursesAsync(int instructorId);
 }
