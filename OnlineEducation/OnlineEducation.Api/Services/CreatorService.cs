@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using OnlineEducation.Api.Data;
 using OnlineEducation.Api.Dtos.Courses;
 using OnlineEducation.Api.Dtos.Creator;
+using OnlineEducation.Api.Dtos.Learning;
 using OnlineEducation.Api.Interfaces;
 using OnlineEducation.Api.Models;
 using OnlineEducation.Api.Models.Lessons;
@@ -75,7 +76,19 @@ public class CreatorService : ICreatorService
 
         await _context.Lessons.AddAsync(lesson);
         await _context.SaveChangesAsync();
-        return (true, null, lesson);
+
+        // Map to DTO to avoid serialization cycles
+        var dto = new LessonDto
+        {
+            Id = lesson.Id,
+            Title = lesson.Title,
+            Order = lesson.Order,
+            Type = lesson.Type,
+            VideoUrl = (lesson as VideoLesson)?.VideoUrl,
+            TextContent = (lesson as TextLesson)?.TextContent
+        };
+
+        return (true, null, dto);
     }
 
     public async Task<(bool, string?, object?)> CreateTestAsync(int moduleId, TestCreateDto testDto, int instructorId)
