@@ -12,10 +12,12 @@ namespace OnlineEducation.Api.Services;
 public class CreatorService : ICreatorService
 {
     private readonly ApplicationDbContext _context;
+    private readonly ILessonFactory _lessonFactory;
 
-    public CreatorService(ApplicationDbContext context)
+    public CreatorService(ApplicationDbContext context, ILessonFactory lessonFactory)
     {
         _context = context;
+        _lessonFactory = lessonFactory;
     }
 
     private async Task<bool> IsCourseOwner(int courseId, int instructorId)
@@ -53,19 +55,23 @@ public class CreatorService : ICreatorService
             return (false, "You do not own this course.", null);
         }
 
-        Lesson lesson;
-        if (lessonDto.Type == OnlineEducation.Api.Enums.LessonType.Video)
-        {
-            lesson = new VideoLesson { VideoUrl = lessonDto.VideoUrl };
-        }
-        else
-        {
-            lesson = new TextLesson { TextContent = lessonDto.TextContent };
-        }
+        // Factory Method Pattern: Use factory to create appropriate lesson type
+        var lesson = _lessonFactory.CreateLesson(
+            lessonDto.Type,
+            lessonDto.Title,
+            lessonDto.Order,
+            moduleId
+        );
 
-        lesson.Title = lessonDto.Title;
-        lesson.Order = lessonDto.Order;
-        lesson.ModuleId = moduleId;
+        // Set type-specific content
+        if (lesson is VideoLesson videoLesson)
+        {
+            videoLesson.VideoUrl = lessonDto.VideoUrl ?? string.Empty;
+        }
+        else if (lesson is TextLesson textLesson)
+        {
+            textLesson.TextContent = lessonDto.TextContent ?? string.Empty;
+        }
 
         await _context.Lessons.AddAsync(lesson);
         await _context.SaveChangesAsync();

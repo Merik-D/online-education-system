@@ -47,6 +47,10 @@ builder.Services.AddScoped<ICreatorService, CreatorService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 
+// Factory Method Pattern: Lesson creation factory
+builder.Services.AddScoped<ILessonFactory, LessonFactory>();
+
+// Strategy Pattern: Grading strategies
 builder.Services.AddScoped<IGradingStrategyFactory, GradingStrategyFactory>();
 builder.Services.AddScoped<IGradingStrategy, AutoGradingStrategy>();
 builder.Services.AddScoped<IGradingStrategy, ManualGradingStrategy>();
