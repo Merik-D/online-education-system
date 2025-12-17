@@ -13,11 +13,16 @@ public class LearningService : ILearningService
 {
     private readonly ApplicationDbContext _context;
     private readonly IGradingStrategyFactory _strategyFactory;
+    private readonly ILearningProgressionFactory _progressionFactory;
 
-    public LearningService(ApplicationDbContext context, IGradingStrategyFactory strategyFactory)
+    public LearningService(
+        ApplicationDbContext context, 
+        IGradingStrategyFactory strategyFactory,
+        ILearningProgressionFactory progressionFactory)
     {
         _context = context;
         _strategyFactory = strategyFactory;
+        _progressionFactory = progressionFactory;
     }
 
     public async Task EnrollInCourseAsync(int courseId, int userId)
@@ -242,5 +247,24 @@ public class LearningService : ILearningService
                 }).ToList()
             })
             .FirstOrDefaultAsync();
+    }
+
+    /// <summary>
+    /// Complete a lesson using Template Method pattern for standardized progression flow
+    /// </summary>
+    public async Task<(bool success, string? error)> CompleteLessonAsync(int lessonId, int userId)
+    {
+        // Get the lesson type first
+        var lesson = await _context.Lessons.FindAsync(lessonId);
+        if (lesson == null)
+        {
+            return (false, "Lesson not found");
+        }
+
+        // Use factory to create appropriate progression template based on lesson type
+        var progression = _progressionFactory.CreateProgression(lesson.Type);
+
+        // Execute the template method (standardized flow)
+        return await progression.ExecuteLearningProgressionAsync(userId, lessonId);
     }
 }

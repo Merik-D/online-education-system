@@ -120,4 +120,21 @@ public class LearningController : ControllerBase
             return NotFound(new { message = ex.Message });
         }
     }
+
+    /// <summary>
+    /// Complete a lesson - uses Template Method pattern for standardized learning progression
+    /// </summary>
+    [HttpPost("lessons/{lessonId}/complete")]
+    public async Task<IActionResult> CompleteLesson(int lessonId)
+    {
+        var userId = User.GetUserId();
+        var (success, error) = await _learningService.CompleteLessonAsync(lessonId, userId);
+
+        if (!success)
+        {
+            return BadRequest(new { message = error });
+        }
+
+        return Ok(new { message = "Lesson completed successfully" });
+    }
 }

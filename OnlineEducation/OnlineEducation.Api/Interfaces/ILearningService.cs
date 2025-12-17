@@ -12,4 +12,5 @@ public interface ILearningService
     Task<GradingResultDto> SubmitTestAsync(int testId, int userId, TestSubmissionDto submissionDto);
     Task<LessonDto?> GetLessonDetailsAsync(int lessonId, int userId);
     Task<TestDetailsDto?> GetTestDetailsAsync(int testId, int userId);
+    Task<(bool success, string? error)> CompleteLessonAsync(int lessonId, int userId);
 }
