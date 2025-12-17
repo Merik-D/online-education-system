@@ -30,3 +30,8 @@ export const getTestDetails = async (testId: number): Promise<TestDetailsDto> =>
   const response = await api.get<TestDetailsDto>(`/learning/test/${testId}`);
   return response.data;
 };
+
+export const completeLesson = async (lessonId: number): Promise<{ message: string }> => {
+  const response = await api.post<{ message: string }>(`/learning/lessons/${lessonId}/complete`);
+  return response.data;
+};

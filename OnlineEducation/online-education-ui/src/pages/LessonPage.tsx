@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { LessonDto, MyCourseDetailsDto } from '../models/learning.models';
-import { getLessonById, getCourseDetails } from '../services/learningService';
+import { getLessonById, getCourseDetails, completeLesson } from '../services/learningService';
 import { 
   Typography, 
   CircularProgress, 
@@ -16,6 +16,7 @@ import {
   ListItemIcon,
   ListItemText,
   IconButton,
+  Snackbar,
 } from '@mui/material';
 import { LessonType } from '../models/enums';
 import YouTube from 'react-youtube';
@@ -25,6 +26,7 @@ import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import ArticleIcon from '@mui/icons-material/Article';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 const LessonPage = () => {
   const { lessonId, courseId } = useParams<{ lessonId: string; courseId: string }>();
@@ -33,6 +35,8 @@ const LessonPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showSidebar, setShowSidebar] = useState(true);
+  const [completionLoading, setCompletionLoading] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -71,6 +75,21 @@ const LessonPage = () => {
     } else {
       console.error('Could not parse YouTube URL:', url);
       return null;
+    }
+  };
+
+  const handleCompleteLesson = async () => {
+    if (!lessonId) return;
+    
+    try {
+      setCompletionLoading(true);
+      await completeLesson(Number(lessonId));
+      setShowSuccessMessage(true);
+    } catch (err) {
+      console.error('Error completing lesson:', err);
+      setError('Failed to mark lesson as complete. Please try again.');
+    } finally {
+      setCompletionLoading(false);
     }
   };
 
@@ -187,21 +206,36 @@ const LessonPage = () => {
           {loading ? (
             <CircularProgress sx={{ color: '#a435f0' }} />
           ) : lesson.type === LessonType.Video && youtubeId ? (
-            <YouTube
-              videoId={youtubeId}
-              opts={{
-                height: '100%',
-                width: '100%',
-                playerVars: {
-                  autoplay: 0,
-                  controls: 1,
-                },
-              }}
-              style={{
-                width: '100%',
-                height: '100%',
-              }}
-            />
+            <Box sx={{ width: '100%', height: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ flex: 1, minHeight: 0 }}>
+                <YouTube
+                  videoId={youtubeId}
+                  opts={{
+                    height: '100%',
+                    width: '100%',
+                    playerVars: {
+                      autoplay: 0,
+                      controls: 1,
+                    },
+                  }}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                  }}
+                />
+              </Box>
+              <Box sx={{ backgroundColor: '#1a1a1a', p: 2, display: 'flex', justifyContent: 'center' }}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<CheckCircleIcon />}
+                  onClick={handleCompleteLesson}
+                  disabled={completionLoading}
+                >
+                  {completionLoading ? 'Completing...' : 'Mark as Complete'}
+                </Button>
+              </Box>
+            </Box>
           ) : lesson.type === LessonType.Text ? (
             <Box
               sx={{
@@ -238,10 +272,21 @@ const LessonPage = () => {
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
                     letterSpacing: '0.2px',
+                    mb: 4,
                   }}
                 >
                   {lesson.textContent}
                 </Typography>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<CheckCircleIcon />}
+                  onClick={handleCompleteLesson}
+                  disabled={completionLoading}
+                  sx={{ mt: 2 }}
+                >
+                  {completionLoading ? 'Completing...' : 'Mark as Complete'}
+                </Button>
               </Box>
             </Box>
           ) : (
@@ -375,6 +420,14 @@ const LessonPage = () => {
           </Box>
         )}
       </Box>
+      
+      <Snackbar
+        open={showSuccessMessage}
+        autoHideDuration={4000}
+        onClose={() => setShowSuccessMessage(false)}
+        message="Lesson marked as complete! 🎉"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 };

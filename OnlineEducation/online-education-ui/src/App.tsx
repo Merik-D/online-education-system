@@ -20,7 +20,8 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import AdminGradeSubmissionsPage from './pages/AdminGradeSubmissionsPage';
 import LessonPage from './pages/LessonPage';
 import InstructorDashboardPage from './pages/InstructorDashboardPage';
-import CourseCreatePage from './pages/CourseCreatePage'
+import CourseCreatePage from './pages/CourseCreatePage';
+import CourseBuilderPage from './pages/CourseBuilderPage';
 
 function App() {
   return (
@@ -49,6 +50,7 @@ function App() {
               <Route path="/instructor/dashboard" element={<InstructorDashboardPage />} />
               <Route path="/instructor/grade-submissions" element={<AdminGradeSubmissionsPage />} />
               <Route path="/instructor/course/new" element={<CourseCreatePage />} />
+              <Route path="/instructor/course/builder" element={<CourseBuilderPage />} />
               {/* <Route path="/instructor/course/:id/edit" element={<CourseEditPage />} /> */}
               
             </Route>

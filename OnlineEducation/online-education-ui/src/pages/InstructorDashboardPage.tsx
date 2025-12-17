@@ -11,7 +11,9 @@ import {
   Button,
   Grid,
   Box,
+  ButtonGroup,
 } from '@mui/material';
+import { Add as AddIcon, Build as BuildIcon } from '@mui/icons-material';
 
 const InstructorDashboardPage = () => {
   const [courses, setCourses] = useState<CourseDto[]>([]);
@@ -34,9 +36,14 @@ const InstructorDashboardPage = () => {
         <Typography variant="h3" gutterBottom>
           Мої Створені Курси
         </Typography>
-        <Button variant="contained" color="primary" component={Link} to="/instructor/course/new">
-          + Створити Курс
-        </Button>
+        <ButtonGroup variant="contained">
+          <Button color="primary" component={Link} to="/instructor/course/new" startIcon={<AddIcon />}>
+            Швидке Створення
+          </Button>
+          <Button color="secondary" component={Link} to="/instructor/course/builder" startIcon={<BuildIcon />}>
+            Course Builder
+          </Button>
+        </ButtonGroup>
       </Box>
       <Grid container spacing={4}>
         {courses.map((course) => (
