@@ -28,6 +28,8 @@ public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<int>, i
     public DbSet<StudentAnswer> StudentAnswers { get; set; }
     public DbSet<StudentAnswerOption> StudentAnswerOptions { get; set; }
     public DbSet<Notification> Notifications { get; set; }
+    public DbSet<CourseRecommendation> CourseRecommendations { get; set; }
+    public DbSet<CourseInteraction> CourseInteractions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
