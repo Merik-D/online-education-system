@@ -208,7 +208,18 @@ public class CreatorService : ICreatorService
         }
 
         await _context.SaveChangesAsync();
-        return (true, null, lesson);
+
+        var resultDto = new LessonDto
+        {
+            Id = lesson.Id,
+            Title = lesson.Title,
+            Order = lesson.Order,
+            Type = lesson.Type,
+            VideoUrl = (lesson as VideoLesson)?.VideoUrl,
+            TextContent = (lesson as TextLesson)?.TextContent
+        };
+
+        return (true, null, resultDto);
     }
 
     public async Task<(bool, string?, object?)> UpdateTestAsync(int testId, TestCreateDto dto, int instructorId)
