@@ -1,18 +1,38 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { LessonDto } from '../models/learning.models';
-import { getLessonById } from '../services/learningService';
-import { Container, Typography, CircularProgress, Alert, Paper } from '@mui/material';
+import { useParams, Link } from 'react-router-dom';
+import { LessonDto, MyCourseDetailsDto } from '../models/learning.models';
+import { getLessonById, getCourseDetails } from '../services/learningService';
+import { 
+  Typography, 
+  CircularProgress, 
+  Alert, 
+  Box,
+  Button,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  IconButton,
+} from '@mui/material';
 import { LessonType } from '../models/enums';
-
-// --- 1. Імпортуємо нову бібліотеку ---
 import YouTube from 'react-youtube';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import ArticleIcon from '@mui/icons-material/Article';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 
 const LessonPage = () => {
-  const { lessonId } = useParams<{ lessonId: string }>();
+  const { lessonId, courseId } = useParams<{ lessonId: string; courseId: string }>();
   const [lesson, setLesson] = useState<LessonDto | null>(null);
+  const [courseDetails, setCourseDetails] = useState<MyCourseDetailsDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showSidebar, setShowSidebar] = useState(true);
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -21,14 +41,25 @@ const LessonPage = () => {
         setLoading(true);
         const data = await getLessonById(Number(lessonId));
         setLesson(data);
+        
+        // Fetch course details if courseId is available
+        if (courseId) {
+          try {
+            const details = await getCourseDetails(Number(courseId));
+            setCourseDetails(details);
+          } catch (err) {
+            console.warn('Could not fetch course details:', err);
+          }
+        }
       } catch (err) {
         setError('Error fetching lesson details.');
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
     fetchLesson();
-  }, [lessonId]);
+  }, [lessonId, courseId]);
 
   const getYouTubeId = (url: string): string | null => {
     if (!url) return null;
@@ -38,52 +69,313 @@ const LessonPage = () => {
     if (match && match[2].length === 11) {
       return match[2];
     } else {
-      console.error("Could not parse YouTube URL:", url);
+      console.error('Could not parse YouTube URL:', url);
       return null;
     }
   };
-  
+
   let youtubeId: string | null = null;
   if (lesson && lesson.type === LessonType.Video && lesson.videoUrl) {
     youtubeId = getYouTubeId(lesson.videoUrl);
   }
 
-  const playerOptions = {
-    height: '390',
-    width: '640',
-    playerVars: {
-      autoplay: 0,
-      controls: 1,
-    },
-  };
+  if (loading) {
+    return (
+      <Box className="loading-container">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-  if (loading) return <CircularProgress />;
-  if (error) return <Alert severity="error">{error}</Alert>;
-  if (!lesson) return <Typography>Урок не знайдено.</Typography>;
+  if (error) {
+    return (
+      <Box sx={{ backgroundColor: '#f7f7f7', minHeight: '100vh', py: 4 }}>
+        <Box sx={{ maxWidth: '1200px', mx: 'auto', px: 2 }}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (!lesson) {
+    return (
+      <Box sx={{ backgroundColor: '#f7f7f7', minHeight: '100vh', py: 4 }}>
+        <Box sx={{ maxWidth: '1200px', mx: 'auto', px: 2 }}>
+          <Typography variant="h6" color="textSecondary">
+            Lesson not found.
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
-    <Container maxWidth="md">
-      <Typography variant="h3" gutterBottom>
-        {lesson.title}
-      </Typography>
+    <Box sx={{ backgroundColor: '#1f1f1f', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <Box
+        sx={{
+          backgroundColor: '#1f1f1f',
+          borderBottom: '1px solid #333',
+          px: 2,
+          py: 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Button
+          component={Link}
+          to="/my-courses"
+          startIcon={<ArrowBackIcon />}
+          sx={{
+            color: '#fff',
+            textTransform: 'none',
+            fontWeight: 600,
+            '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
+          }}
+        >
+          Back to Course
+        </Button>
 
-      <Paper elevation={3} sx={{ mt: 3, p: 3 }}>
-        
-        {lesson.type === LessonType.Video && youtubeId && (
-          <YouTube
-            videoId={youtubeId}
-            opts={playerOptions}
-            style={{ width: '100%', maxWidth: '640px', margin: 'auto' }}
-          />
-        )}
+        <Typography
+          variant="h6"
+          sx={{
+            color: '#fff',
+            fontWeight: 700,
+            flex: 1,
+            ml: 3,
+            fontSize: { xs: '0.9rem', md: '1rem' },
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {lesson.title}
+        </Typography>
 
-        {lesson.type === LessonType.Text && (
-          <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-            {lesson.textContent}
-          </Typography>
+        {courseDetails && (
+          <IconButton
+            onClick={() => setShowSidebar(!showSidebar)}
+            sx={{
+              color: '#fff',
+              ml: 2,
+              display: { xs: 'flex', md: 'none' },
+              '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
+            }}
+          >
+            {showSidebar ? <CloseIcon /> : <MenuIcon />}
+          </IconButton>
         )}
-      </Paper>
-    </Container>
+      </Box>
+
+      {/* Main Content Area */}
+      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Player Area - Left Side */}
+        <Box
+          sx={{
+            flex: 1,
+            backgroundColor: '#000',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            minHeight: 0,
+            position: 'relative',
+            width: '100%',
+          }}
+        >
+          {loading ? (
+            <CircularProgress sx={{ color: '#a435f0' }} />
+          ) : lesson.type === LessonType.Video && youtubeId ? (
+            <YouTube
+              videoId={youtubeId}
+              opts={{
+                height: '100%',
+                width: '100%',
+                playerVars: {
+                  autoplay: 0,
+                  controls: 1,
+                },
+              }}
+              style={{
+                width: '100%',
+                height: '100%',
+              }}
+            />
+          ) : lesson.type === LessonType.Text ? (
+            <Box
+              sx={{
+                backgroundColor: '#2a2a2a',
+                p: { xs: 2, sm: 3, md: 4 },
+                width: '100%',
+                height: '100%',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                color: '#fff',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <Box sx={{ maxWidth: '1000px', mx: 'auto', width: '100%', pb: 4 }}>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontWeight: 700,
+                    mb: 3,
+                    fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.5rem' },
+                    color: '#fff',
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {lesson.title}
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    lineHeight: 1.9,
+                    fontSize: { xs: '0.95rem', sm: '1rem', md: '1.1rem' },
+                    color: '#e0e0e0',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    letterSpacing: '0.2px',
+                  }}
+                >
+                  {lesson.textContent}
+                </Typography>
+              </Box>
+            </Box>
+          ) : (
+            <Typography variant="h6" sx={{ color: '#fff', textAlign: 'center' }}>
+              📄 Content not available
+            </Typography>
+          )}
+        </Box>
+
+        {/* Sidebar - Right Side */}
+        {courseDetails && (
+          <Box
+            sx={{
+              width: { xs: '100%', md: '350px' },
+              backgroundColor: '#f7f7f7',
+              borderLeft: { xs: 'none', md: '1px solid #e0e0e0' },
+              display: showSidebar ? 'flex' : 'none',
+              flexDirection: 'column',
+              position: { xs: 'absolute', md: 'relative' },
+              top: { xs: 0, md: 'auto' },
+              right: { xs: 0, md: 'auto' },
+              height: { xs: '100%', md: 'auto' },
+              zIndex: 10,
+              boxShadow: { xs: '-4px 0 12px rgba(0,0,0,0.15)', md: 'none' },
+            }}
+          >
+            {/* Sidebar Header */}
+            <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0', backgroundColor: '#fff' }}>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                Course content
+                <IconButton
+                  size="small"
+                  onClick={() => setShowSidebar(false)}
+                  sx={{ display: { xs: 'flex', md: 'none' } }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Typography>
+            </Box>
+
+            {/* Course Modules List */}
+            <Box sx={{ flex: 1, overflow: 'auto' }}>
+              {courseDetails.modules.map((module) => (
+                <Accordion
+                  key={module.id}
+                  defaultExpanded
+                  sx={{
+                    boxShadow: 'none',
+                    border: 'none',
+                    borderBottom: '1px solid #e0e0e0',
+                    '&:before': { display: 'none' },
+                  }}
+                >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    sx={{
+                      backgroundColor: '#fff',
+                      '&.Mui-expanded': { minHeight: '48px' },
+                      p: 1.5,
+                    }}
+                  >
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                      {module.title}
+                    </Typography>
+                  </AccordionSummary>
+
+                  <AccordionDetails sx={{ p: 0 }}>
+                    <List sx={{ width: '100%', p: 0 }}>
+                      {module.lessons.map((l) => {
+                        const isCurrentLesson = l.id === lesson.id;
+                        return (
+                          <ListItemButton
+                            key={l.id}
+                            component={Link}
+                            to={courseId ? `/my-courses/${courseId}/lesson/${l.id}` : `/lesson/${l.id}`}
+                            sx={{
+                              pl: 4,
+                              backgroundColor: isCurrentLesson ? 'rgba(164, 53, 240, 0.1)' : 'transparent',
+                              borderLeft: isCurrentLesson ? '4px solid #a435f0' : 'none',
+                              '&:hover': {
+                                backgroundColor: 'rgba(0,0,0,0.04)',
+                              },
+                            }}
+                          >
+                            <ListItemIcon
+                              sx={{
+                                minWidth: '32px',
+                                color: isCurrentLesson ? '#a435f0' : '#999',
+                              }}
+                            >
+                              {l.type === LessonType.Video ? (
+                                <PlayCircleIcon fontSize="small" />
+                              ) : (
+                                <ArticleIcon fontSize="small" />
+                              )}
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    fontWeight: isCurrentLesson ? 600 : 500,
+                                    color: isCurrentLesson ? '#a435f0' : '#333',
+                                    fontSize: '0.85rem',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {l.title}
+                                </Typography>
+                              }
+                            />
+                          </ListItemButton>
+                        );
+                      })}
+                    </List>
+                  </AccordionDetails>
+                </Accordion>
+              ))}
+            </Box>
+          </Box>
+        )}
+      </Box>
+    </Box>
   );
 };
 
