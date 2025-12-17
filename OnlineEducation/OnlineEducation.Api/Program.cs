@@ -94,6 +94,8 @@ builder.Services.AddControllers()
     {
         // Serializer enums like string not a number
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        // Defensive: ignore reference cycles in EF graphs
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
 
 // Add SignalR for real-time notifications
