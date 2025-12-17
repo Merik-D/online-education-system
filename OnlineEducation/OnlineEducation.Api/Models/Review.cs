@@ -19,4 +19,6 @@ public class Review
     public int CourseId { get; set; }
     [ForeignKey("CourseId")]
     public virtual Course Course { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
