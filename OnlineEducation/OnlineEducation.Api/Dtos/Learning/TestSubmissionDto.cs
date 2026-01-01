@@ -1,7 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
 namespace OnlineEducation.Api.Dtos.Learning;
-
 public class TestSubmissionDto
 {
     [Required]

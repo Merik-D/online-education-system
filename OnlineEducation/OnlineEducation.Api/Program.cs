@@ -1,36 +1,50 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OnlineEducation.Api.Data;
+using OnlineEducation.Api.Data.Seed;
+using OnlineEducation.Api.Hubs;
 using OnlineEducation.Api.Interfaces;
+using OnlineEducation.Api.Middleware;
 using OnlineEducation.Api.Models;
 using OnlineEducation.Api.Services;
 using OnlineEducation.Api.Services.GradingStrategies;
+using Serilog;
 using System.Text;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
-
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.Console()
+    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+builder.Host.UseSerilog();
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
-
+builder.Services.AddValidatorsFromAssemblyContaining(typeof(Program));
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
-
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<ILearningService, LearningService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IInstructorService, InstructorService>();
 builder.Services.AddScoped<ICreatorService, CreatorService>();
-
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IRecommendationService, RecommendationService>();
+builder.Services.AddScoped<ICertificateService, CertificateService>();
+builder.Services.AddScoped<IRatingService, RatingService>();
+builder.Services.AddScoped<IFinancialReportService, FinancialReportService>();
+builder.Services.AddScoped<ILessonFactory, LessonFactory>();
+builder.Services.AddScoped<ILearningProgressionFactory, LearningProgressionFactory>();
 builder.Services.AddScoped<IGradingStrategyFactory, GradingStrategyFactory>();
 builder.Services.AddScoped<IGradingStrategy, AutoGradingStrategy>();
 builder.Services.AddScoped<IGradingStrategy, ManualGradingStrategy>();
-
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 {
     options.Password.RequireDigit = false;
@@ -42,7 +56,6 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
-
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -61,14 +74,13 @@ builder.Services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
         };
     });
-
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        // Serializer enums like string not a number
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
-
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -81,7 +93,6 @@ builder.Services.AddSwaggerGen(options =>
         In = ParameterLocation.Header,
         Description = "Please, enter your JWT token"
     });
-
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -97,7 +108,6 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp",
@@ -105,25 +115,22 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins("http://localhost:3000", "https://localhost:7256")
                   .AllowAnyHeader()
-                  .AllowAnyMethod();
+                  .AllowAnyMethod()
+                  .AllowCredentials();
         });
 });
-
 var app = builder.Build();
-
+app.UseGlobalExceptionHandling();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
 app.UseHttpsRedirection();
-
 app.UseCors("AllowReactApp");
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
+app.MapHub<NotificationHub>("/hubs/notifications");
+await DevDataSeeder.SeedAsync(app.Services);
 app.Run();

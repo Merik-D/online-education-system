@@ -1,7 +1,5 @@
 ﻿using MediatR;
-
 namespace OnlineEducation.Api.Events;
-
 public class TestGradedEvent : INotification
 {
     public int SubmissionId { get; set; }

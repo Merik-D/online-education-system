@@ -1,4 +1,4 @@
-export interface Notification {
+﻿export interface Notification {
   id: number;
   message: string;
   linkUrl: string | null;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { register } from '../services/authService';
 import {
@@ -8,26 +8,28 @@ import {
   Typography,
   Box,
   Alert,
-  Select, // <-- 1. ІМПОРТ
+  Select,
   MenuItem,
   FormControl,
   InputLabel,
 } from '@mui/material';
-
 const RegisterPage = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('Student'); // <-- 2. НОВИЙ СТАН
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('Student');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (password !== confirmPassword) {
+      setError('Паролі не співпадають');
+      return;
+    }
     try {
-      // 3. Передаємо 'role' в сервіс
-      await register({ fullName, email, password, role });
+      await register({ fullName, email, password, confirmPassword, role });
       navigate('/login');
     } catch (err: any) {
       if (err.response && err.response.data.message) {
@@ -37,7 +39,6 @@ const RegisterPage = () => {
       }
     }
   };
-
   return (
     <Container maxWidth="xs">
       <Box
@@ -54,7 +55,6 @@ const RegisterPage = () => {
           Реєстрація
         </Typography>
         {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
-        
         <TextField
           margin="normal"
           required
@@ -63,7 +63,6 @@ const RegisterPage = () => {
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
         />
-        
         <TextField
           margin="normal"
           required
@@ -73,7 +72,6 @@ const RegisterPage = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        
         <TextField
           margin="normal"
           required
@@ -83,8 +81,16 @@ const RegisterPage = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-
-        {/* --- 4. ДОДАНО ВИБІР РОЛІ --- */}
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          label="Підтвердження паролю"
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
+        {}
         <FormControl fullWidth margin="normal" required>
           <InputLabel>Я...</InputLabel>
           <Select
@@ -96,8 +102,7 @@ const RegisterPage = () => {
             <MenuItem value={"Instructor"}>Викладач</MenuItem>
           </Select>
         </FormControl>
-        {/* --- КІНЕЦЬ БЛОКУ --- */}
-
+        {}
         <Button
           type="submit"
           fullWidth
@@ -110,5 +115,4 @@ const RegisterPage = () => {
     </Container>
   );
 };
-
 export default RegisterPage;

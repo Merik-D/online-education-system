@@ -4,26 +4,21 @@ using OnlineEducation.Api.Data;
 using OnlineEducation.Api.Dtos.Admin;
 using OnlineEducation.Api.Interfaces;
 using OnlineEducation.Api.Models;
-
 namespace OnlineEducation.Api.Services;
-
 public class AdminService : IAdminService
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<User> _userManager;
-
     public AdminService(ApplicationDbContext context, UserManager<User> userManager)
     {
         _context = context;
         _userManager = userManager;
     }
-
     public async Task<UserStatsDto> GetUserStatsAsync()
     {
         var students = await _userManager.GetUsersInRoleAsync("Student");
         var instructors = await _userManager.GetUsersInRoleAsync("Instructor");
         var admins = await _userManager.GetUsersInRoleAsync("Admin");
-
         return new UserStatsDto
         {
             TotalStudents = students.Count,
@@ -31,12 +26,10 @@ public class AdminService : IAdminService
             TotalAdmins = admins.Count
         };
     }
-
     public async Task<IEnumerable<UserDto>> GetAllUsersAsync()
     {
         var users = await _userManager.Users.ToListAsync();
         var userDtos = new List<UserDto>();
-
         foreach (var user in users)
         {
             userDtos.Add(new UserDto
@@ -50,7 +43,6 @@ public class AdminService : IAdminService
         }
         return userDtos;
     }
-
     public async Task<bool> ToggleUserBlockAsync(int userId)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
@@ -58,7 +50,6 @@ public class AdminService : IAdminService
         {
             return false;
         }
-
         if (await _userManager.IsLockedOutAsync(user))
         {
             await _userManager.SetLockoutEndDateAsync(user, null);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login as authLogin } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
@@ -10,14 +10,12 @@ import {
   Box,
   Alert,
 } from '@mui/material';
-
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { login } = useAuth();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -29,7 +27,6 @@ const LoginPage = () => {
       setError('Неправильний логін або пароль.');
     }
   };
-
   return (
     <Container maxWidth="xs">
       <Box
@@ -76,5 +73,4 @@ const LoginPage = () => {
     </Container>
   );
 };
-
 export default LoginPage;

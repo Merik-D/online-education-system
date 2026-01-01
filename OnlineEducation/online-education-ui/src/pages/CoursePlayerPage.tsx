@@ -1,74 +1,94 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { MyCourseDetailsDto } from '../models/learning.models';
+﻿import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getCourseDetails } from '../services/learningService';
-import { Container, Typography, CircularProgress, Alert, Box, List, ListItem, ListItemText, ListItemButton } from '@mui/material'; // <-- 2. ListItemButton
-import { LessonType } from '../models/enums';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import OndemandVideoIcon from '@mui/icons-material/OndemandVideo';
-import DescriptionIcon from '@mui/icons-material/Description';
-
+import { Box, CircularProgress, Container, Typography, Button, Alert } from '@mui/material';
+import { Info as InfoIcon } from '@mui/icons-material';
 const CoursePlayerPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [course, setCourse] = useState<MyCourseDetailsDto | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    const fetchCourse = async () => {
+    const redirectToFirstLesson = async () => {
       if (!id) return;
       try {
-        setLoading(true);
-        const data = await getCourseDetails(Number(id));
-        setCourse(data);
+        const courseDetails = await getCourseDetails(Number(id));
+        if (!courseDetails.modules || courseDetails.modules.length === 0) {
+          setError('This course does not have any content yet. Please check back later.');
+          return;
+        }
+        const hasLessons = courseDetails.modules.some(m => m.lessons && m.lessons.length > 0);
+        if (!hasLessons) {
+          setError('This course does not have any lessons yet. The instructor is still preparing the content.');
+          return;
+        }
+        let targetLesson = null;
+        for (const module of courseDetails.modules) {
+          if (module.lessons && module.lessons.length > 0) {
+            const uncompletedLesson = module.lessons.find(l => !l.isCompleted);
+            if (uncompletedLesson) {
+              targetLesson = uncompletedLesson;
+              break;
+            }
+          }
+        }
+        if (!targetLesson) {
+          for (const module of courseDetails.modules) {
+            if (module.lessons && module.lessons.length > 0) {
+              targetLesson = module.lessons[0];
+              break;
+            }
+          }
+        }
+        if (targetLesson) {
+          navigate(`/my-courses/${id}/lesson/${targetLesson.id}`);
+        } else {
+          setError('Unable to find any lessons in this course.');
+        }
       } catch (err) {
-        setError('Error fetching course details.');
-      } finally {
-        setLoading(false);
+        console.error('Error fetching course details:', err);
+        setError('Failed to load course details. Please try again.');
       }
     };
-    fetchCourse();
-  }, [id]);
-
-  if (loading) return <CircularProgress />;
-  if (error) return <Alert severity="error">{error}</Alert>;
-  if (!course) return <Typography>Курс не знайдено.</Typography>;
-
+    redirectToFirstLesson();
+  }, [id, navigate]);
+  if (error) {
+    return (
+      <Container maxWidth="md" sx={{ py: 8 }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <InfoIcon sx={{ fontSize: 80, color: '#a435f0', mb: 3 }} />
+          <Typography variant="h4" sx={{ fontWeight: 600, mb: 2 }}>
+            Course Not Ready
+          </Typography>
+          <Alert severity="info" sx={{ mb: 4, textAlign: 'left' }}>
+            {error}
+          </Alert>
+          <Button
+            variant="contained"
+            onClick={() => navigate('/my-courses')}
+            sx={{
+              backgroundColor: '#a435f0',
+              '&:hover': { backgroundColor: '#942fb8' },
+              px: 4,
+            }}
+          >
+            Back to My Courses
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
   return (
-    <Container>
-      <Typography variant="h3" gutterBottom>
-        {course.title}
-      </Typography>
-      <Typography variant="h5">Прогрес: {course.progress.toFixed(0)}%</Typography>
-      
-      <Box sx={{ mt: 4 }}>
-        {course.modules.map((module) => (
-          <Box key={module.id} sx={{ mb: 3 }}>
-            <Typography variant="h5">{module.title}</Typography>
-            <List>
-              {module.lessons.map((lesson) => (
-                <ListItemButton 
-                  key={lesson.id} 
-                  component={Link} 
-                  to={`/lesson/${lesson.id}`}
-                >
-                  {lesson.type === LessonType.Video ? <OndemandVideoIcon sx={{mr: 2}} /> : <DescriptionIcon sx={{mr: 2}} />}
-                  <ListItemText 
-                    primary={lesson.title} 
-                    secondary={lesson.type === LessonType.Video ? 'Відео Урок' : 'Текстовий Урок'} 
-                  />
-                </ListItemButton>
-              ))}
-              <ListItemButton component={Link} to={`/test/1`}>
-                 <FitnessCenterIcon sx={{mr: 2}} />
-                 <ListItemText primary="Пройти Тест" sx={{color: 'blue'}} />
-              </ListItemButton>
-            </List>
-          </Box>
-        ))}
-      </Box>
-    </Container>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        backgroundColor: '#f7f7f7',
+      }}
+    >
+      <CircularProgress />
+    </Box>
   );
 };
-
 export default CoursePlayerPage;

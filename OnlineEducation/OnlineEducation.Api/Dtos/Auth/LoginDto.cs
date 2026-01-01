@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 namespace OnlineEducation.Api.Dtos.Auth;
-
 public class LoginDto
 {
     [Required]

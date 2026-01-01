@@ -1,6 +1,5 @@
 ﻿using OnlineEducation.Api.Enums;
 namespace OnlineEducation.Api.Dtos.Learning;
-
 public class SubmissionResultDto
 {
     public int SubmissionId { get; set; }

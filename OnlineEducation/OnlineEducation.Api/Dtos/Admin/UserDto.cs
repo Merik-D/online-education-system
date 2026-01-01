@@ -1,5 +1,4 @@
 ﻿namespace OnlineEducation.Api.Dtos.Admin;
-
 public class UserDto
 {
     public int Id { get; set; }

@@ -1,5 +1,4 @@
 ﻿namespace OnlineEducation.Api.Dtos.Admin;
-
 public class SelectedOptionDto
 {
     public int OptionId { get; set; }

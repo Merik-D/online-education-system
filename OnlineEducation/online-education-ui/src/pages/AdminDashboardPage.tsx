@@ -1,13 +1,11 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Typography, Container, Button, Paper, Table, TableBody, TableCell, TableHead, TableRow, CircularProgress } from '@mui/material';
 import { getUserStats, getAllUsers, toggleUserBlock } from '../services/adminService';
 import { UserDto, UserStatsDto } from '../models/admin.models';
-
 const AdminDashboardPage = () => {
   const [stats, setStats] = useState<UserStatsDto | null>(null);
   const [users, setUsers] = useState<UserDto[]>([]);
   const [loading, setLoading] = useState(true);
-
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -21,24 +19,19 @@ const AdminDashboardPage = () => {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchData();
   }, []);
-
   const handleToggleBlock = async (userId: number) => {
     await toggleUserBlock(userId);
     fetchData();
   };
-
   if (loading) return <CircularProgress />;
-
   return (
     <Container>
       <Typography variant="h3" gutterBottom>
         Панель Адміністратора
       </Typography>
-      
       <Typography variant="h5">Статистика:</Typography>
       {stats && (
         <ul>
@@ -47,7 +40,6 @@ const AdminDashboardPage = () => {
           <li>Адмінів: {stats.totalAdmins}</li>
         </ul>
       )}
-
       <Typography variant="h5" sx={{mt: 4}}>Керування Користувачами:</Typography>
       <Paper sx={{mt: 2}}>
         <Table>
@@ -70,8 +62,8 @@ const AdminDashboardPage = () => {
                 <TableCell>{user.roles.join(', ')}</TableCell>
                 <TableCell>{user.isLockedOut ? 'Заблокований' : 'Активний'}</TableCell>
                 <TableCell>
-                  <Button 
-                    variant="contained" 
+                  <Button
+                    variant="contained"
                     color={user.isLockedOut ? 'success' : 'error'}
                     onClick={() => handleToggleBlock(user.id)}
                   >
@@ -86,5 +78,4 @@ const AdminDashboardPage = () => {
     </Container>
   );
 };
-
 export default AdminDashboardPage;

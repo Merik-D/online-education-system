@@ -1,5 +1,4 @@
 ﻿namespace OnlineEducation.Api.Dtos.Admin;
-
 public class UserStatsDto
 {
     public int TotalStudents { get; set; }

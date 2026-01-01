@@ -1,15 +1,11 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-
 #nullable disable
-
 namespace OnlineEducation.Api.Migrations
 {
-    /// <inheritdoc />
-    public partial class InitialSchema : Migration
+    public partial class InitialCreate : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -26,14 +22,13 @@ namespace OnlineEducation.Api.Migrations
                 {
                     table.PrimaryKey("PK_AspNetRoles", x => x.Id);
                 });
-
             migrationBuilder.CreateTable(
                 name: "AspNetUsers",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    FullName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    FullName = table.Column<string>(type: "text", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -53,20 +48,19 @@ namespace OnlineEducation.Api.Migrations
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
                 });
-
             migrationBuilder.CreateTable(
                 name: "Categories",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: false)
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Categories", x => x.Id);
                 });
-
             migrationBuilder.CreateTable(
                 name: "AspNetRoleClaims",
                 columns: table => new
@@ -87,7 +81,6 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
             migrationBuilder.CreateTable(
                 name: "AspNetUserClaims",
                 columns: table => new
@@ -108,7 +101,6 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
             migrationBuilder.CreateTable(
                 name: "AspNetUserLogins",
                 columns: table => new
@@ -128,7 +120,6 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
             migrationBuilder.CreateTable(
                 name: "AspNetUserRoles",
                 columns: table => new
@@ -152,7 +143,6 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
             migrationBuilder.CreateTable(
                 name: "AspNetUserTokens",
                 columns: table => new
@@ -172,7 +162,27 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
+            migrationBuilder.CreateTable(
+                name: "CourseInteractions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    StudentId = table.Column<int>(type: "integer", nullable: false),
+                    CourseId = table.Column<int>(type: "integer", nullable: false),
+                    InteractionType = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CourseInteractions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CourseInteractions_AspNetUsers_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
             migrationBuilder.CreateTable(
                 name: "Courses",
                 columns: table => new
@@ -180,10 +190,12 @@ namespace OnlineEducation.Api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Title = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
                     Level = table.Column<int>(type: "integer", nullable: false),
                     InstructorId = table.Column<int>(type: "integer", nullable: false),
-                    CategoryId = table.Column<int>(type: "integer", nullable: false)
+                    CategoryId = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -201,7 +213,59 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
+            migrationBuilder.CreateTable(
+                name: "Notifications",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    Message = table.Column<string>(type: "text", nullable: false),
+                    IsRead = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Notifications_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+            migrationBuilder.CreateTable(
+                name: "CourseRecommendations",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    StudentId = table.Column<int>(type: "integer", nullable: false),
+                    CourseId = table.Column<int>(type: "integer", nullable: false),
+                    Score = table.Column<double>(type: "double precision", nullable: false),
+                    Reason = table.Column<string>(type: "text", nullable: false),
+                    Viewed = table.Column<bool>(type: "boolean", nullable: false),
+                    Acted = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CourseRecommendations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CourseRecommendations_AspNetUsers_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CourseRecommendations_Courses_CourseId",
+                        column: x => x.CourseId,
+                        principalTable: "Courses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
             migrationBuilder.CreateTable(
                 name: "Enrollments",
                 columns: table => new
@@ -210,8 +274,8 @@ namespace OnlineEducation.Api.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     StudentId = table.Column<int>(type: "integer", nullable: false),
                     CourseId = table.Column<int>(type: "integer", nullable: false),
-                    Progress = table.Column<double>(type: "double precision", nullable: false),
-                    EnrollmentDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    EnrollmentDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Progress = table.Column<double>(type: "double precision", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -229,7 +293,6 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
             migrationBuilder.CreateTable(
                 name: "Modules",
                 columns: table => new
@@ -250,17 +313,17 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
             migrationBuilder.CreateTable(
                 name: "Reviews",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    CourseId = table.Column<int>(type: "integer", nullable: false),
+                    StudentId = table.Column<int>(type: "integer", nullable: false),
                     Rating = table.Column<int>(type: "integer", nullable: false),
                     Comment = table.Column<string>(type: "text", nullable: true),
-                    StudentId = table.Column<int>(type: "integer", nullable: false),
-                    CourseId = table.Column<int>(type: "integer", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -278,28 +341,6 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateTable(
-                name: "Certificates",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    CertificateUrl = table.Column<string>(type: "text", nullable: false),
-                    IssueDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    EnrollmentId = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Certificates", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Certificates_Enrollments_EnrollmentId",
-                        column: x => x.EnrollmentId,
-                        principalTable: "Enrollments",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
             migrationBuilder.CreateTable(
                 name: "Lessons",
                 columns: table => new
@@ -307,11 +348,11 @@ namespace OnlineEducation.Api.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Title = table.Column<string>(type: "text", nullable: false),
-                    Order = table.Column<int>(type: "integer", nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false),
+                    Order = table.Column<int>(type: "integer", nullable: false),
                     ModuleId = table.Column<int>(type: "integer", nullable: false),
-                    TextContent = table.Column<string>(type: "text", nullable: true),
-                    VideoUrl = table.Column<string>(type: "text", nullable: true)
+                    VideoUrl = table.Column<string>(type: "text", nullable: true),
+                    TextContent = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -323,7 +364,6 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
             migrationBuilder.CreateTable(
                 name: "Tests",
                 columns: table => new
@@ -332,7 +372,8 @@ namespace OnlineEducation.Api.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Title = table.Column<string>(type: "text", nullable: false),
                     ModuleId = table.Column<int>(type: "integer", nullable: false),
-                    StrategyType = table.Column<int>(type: "integer", nullable: false)
+                    PassingScore = table.Column<double>(type: "double precision", nullable: false),
+                    GradingStrategyType = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -344,17 +385,42 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
+            migrationBuilder.CreateTable(
+                name: "LessonCompletions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    StudentId = table.Column<int>(type: "integer", nullable: false),
+                    LessonId = table.Column<int>(type: "integer", nullable: false),
+                    CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LessonCompletions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_LessonCompletions_AspNetUsers_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_LessonCompletions_Lessons_LessonId",
+                        column: x => x.LessonId,
+                        principalTable: "Lessons",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
             migrationBuilder.CreateTable(
                 name: "Questions",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    TestId = table.Column<int>(type: "integer", nullable: false),
                     Text = table.Column<string>(type: "text", nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false),
-                    Order = table.Column<int>(type: "integer", nullable: false),
-                    TestId = table.Column<int>(type: "integer", nullable: false)
+                    Order = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -366,7 +432,6 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
             migrationBuilder.CreateTable(
                 name: "StudentSubmissions",
                 columns: table => new
@@ -375,9 +440,10 @@ namespace OnlineEducation.Api.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     StudentId = table.Column<int>(type: "integer", nullable: false),
                     TestId = table.Column<int>(type: "integer", nullable: false),
-                    SubmittedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Score = table.Column<double>(type: "double precision", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    Score = table.Column<double>(type: "double precision", nullable: true)
+                    SubmittedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    GradedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -395,16 +461,48 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
+            migrationBuilder.CreateTable(
+                name: "Certificates",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    StudentId = table.Column<int>(type: "integer", nullable: false),
+                    CourseId = table.Column<int>(type: "integer", nullable: false),
+                    IssuedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    SubmissionId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Certificates", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Certificates_AspNetUsers_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Certificates_Courses_CourseId",
+                        column: x => x.CourseId,
+                        principalTable: "Courses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Certificates_StudentSubmissions_SubmissionId",
+                        column: x => x.SubmissionId,
+                        principalTable: "StudentSubmissions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
             migrationBuilder.CreateTable(
                 name: "Options",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    QuestionId = table.Column<int>(type: "integer", nullable: false),
                     Text = table.Column<string>(type: "text", nullable: false),
-                    IsCorrect = table.Column<bool>(type: "boolean", nullable: false),
-                    QuestionId = table.Column<int>(type: "integer", nullable: false)
+                    IsCorrect = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -416,14 +514,13 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
             migrationBuilder.CreateTable(
                 name: "StudentAnswers",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    StudentSubmissionId = table.Column<int>(type: "integer", nullable: false),
+                    SubmissionId = table.Column<int>(type: "integer", nullable: false),
                     QuestionId = table.Column<int>(type: "integer", nullable: false),
                     AnswerText = table.Column<string>(type: "text", nullable: true)
                 },
@@ -437,13 +534,12 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_StudentAnswers_StudentSubmissions_StudentSubmissionId",
-                        column: x => x.StudentSubmissionId,
+                        name: "FK_StudentAnswers_StudentSubmissions_SubmissionId",
+                        column: x => x.SubmissionId,
                         principalTable: "StudentSubmissions",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
             migrationBuilder.CreateTable(
                 name: "StudentAnswerOptions",
                 columns: table => new
@@ -469,203 +565,199 @@ namespace OnlineEducation.Api.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
                 column: "RoleId");
-
             migrationBuilder.CreateIndex(
                 name: "RoleNameIndex",
                 table: "AspNetRoles",
                 column: "NormalizedName",
                 unique: true);
-
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUserClaims_UserId",
                 table: "AspNetUserClaims",
                 column: "UserId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUserLogins_UserId",
                 table: "AspNetUserLogins",
                 column: "UserId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUserRoles_RoleId",
                 table: "AspNetUserRoles",
                 column: "RoleId");
-
             migrationBuilder.CreateIndex(
                 name: "EmailIndex",
                 table: "AspNetUsers",
                 column: "NormalizedEmail");
-
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUsers_Email",
                 table: "AspNetUsers",
                 column: "Email",
                 unique: true);
-
             migrationBuilder.CreateIndex(
                 name: "UserNameIndex",
                 table: "AspNetUsers",
                 column: "NormalizedUserName",
                 unique: true);
-
             migrationBuilder.CreateIndex(
-                name: "IX_Certificates_EnrollmentId",
+                name: "IX_Certificates_CourseId",
                 table: "Certificates",
-                column: "EnrollmentId",
-                unique: true);
-
+                column: "CourseId");
+            migrationBuilder.CreateIndex(
+                name: "IX_Certificates_StudentId",
+                table: "Certificates",
+                column: "StudentId");
+            migrationBuilder.CreateIndex(
+                name: "IX_Certificates_SubmissionId",
+                table: "Certificates",
+                column: "SubmissionId");
+            migrationBuilder.CreateIndex(
+                name: "IX_CourseInteractions_StudentId",
+                table: "CourseInteractions",
+                column: "StudentId");
+            migrationBuilder.CreateIndex(
+                name: "IX_CourseRecommendations_CourseId",
+                table: "CourseRecommendations",
+                column: "CourseId");
+            migrationBuilder.CreateIndex(
+                name: "IX_CourseRecommendations_StudentId",
+                table: "CourseRecommendations",
+                column: "StudentId");
             migrationBuilder.CreateIndex(
                 name: "IX_Courses_CategoryId",
                 table: "Courses",
                 column: "CategoryId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Courses_InstructorId",
                 table: "Courses",
                 column: "InstructorId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Enrollments_CourseId",
                 table: "Enrollments",
                 column: "CourseId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Enrollments_StudentId",
                 table: "Enrollments",
                 column: "StudentId");
-
+            migrationBuilder.CreateIndex(
+                name: "IX_LessonCompletions_LessonId",
+                table: "LessonCompletions",
+                column: "LessonId");
+            migrationBuilder.CreateIndex(
+                name: "IX_LessonCompletions_StudentId",
+                table: "LessonCompletions",
+                column: "StudentId");
+            migrationBuilder.CreateIndex(
+                name: "IX_LessonCompletions_Student_Lesson",
+                table: "LessonCompletions",
+                columns: new[] { "StudentId", "LessonId" },
+                unique: true);
             migrationBuilder.CreateIndex(
                 name: "IX_Lessons_ModuleId",
                 table: "Lessons",
                 column: "ModuleId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Modules_CourseId",
                 table: "Modules",
                 column: "CourseId");
-
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_UserId",
+                table: "Notifications",
+                column: "UserId");
             migrationBuilder.CreateIndex(
                 name: "IX_Options_QuestionId",
                 table: "Options",
                 column: "QuestionId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Questions_TestId",
                 table: "Questions",
                 column: "TestId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Reviews_CourseId",
                 table: "Reviews",
                 column: "CourseId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Reviews_StudentId",
                 table: "Reviews",
                 column: "StudentId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_StudentAnswerOptions_OptionId",
                 table: "StudentAnswerOptions",
                 column: "OptionId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_StudentAnswerOptions_StudentAnswerId",
                 table: "StudentAnswerOptions",
                 column: "StudentAnswerId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_StudentAnswers_QuestionId",
                 table: "StudentAnswers",
                 column: "QuestionId");
-
             migrationBuilder.CreateIndex(
-                name: "IX_StudentAnswers_StudentSubmissionId",
+                name: "IX_StudentAnswers_SubmissionId",
                 table: "StudentAnswers",
-                column: "StudentSubmissionId");
-
+                column: "SubmissionId");
             migrationBuilder.CreateIndex(
                 name: "IX_StudentSubmissions_StudentId",
                 table: "StudentSubmissions",
                 column: "StudentId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_StudentSubmissions_TestId",
                 table: "StudentSubmissions",
                 column: "TestId");
-
             migrationBuilder.CreateIndex(
                 name: "IX_Tests_ModuleId",
                 table: "Tests",
-                column: "ModuleId",
-                unique: true);
+                column: "ModuleId");
         }
-
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
-
             migrationBuilder.DropTable(
                 name: "AspNetUserClaims");
-
             migrationBuilder.DropTable(
                 name: "AspNetUserLogins");
-
             migrationBuilder.DropTable(
                 name: "AspNetUserRoles");
-
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
-
             migrationBuilder.DropTable(
                 name: "Certificates");
-
             migrationBuilder.DropTable(
-                name: "Lessons");
-
+                name: "CourseInteractions");
+            migrationBuilder.DropTable(
+                name: "CourseRecommendations");
+            migrationBuilder.DropTable(
+                name: "LessonCompletions");
+            migrationBuilder.DropTable(
+                name: "Notifications");
             migrationBuilder.DropTable(
                 name: "Reviews");
-
             migrationBuilder.DropTable(
                 name: "StudentAnswerOptions");
-
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
-
-            migrationBuilder.DropTable(
-                name: "Enrollments");
-
-            migrationBuilder.DropTable(
-                name: "Options");
-
             migrationBuilder.DropTable(
                 name: "StudentAnswers");
-
             migrationBuilder.DropTable(
-                name: "Questions");
-
+                name: "Enrollments");
+            migrationBuilder.DropTable(
+                name: "Options");
             migrationBuilder.DropTable(
                 name: "StudentSubmissions");
-
+            migrationBuilder.DropTable(
+                name: "Questions");
+            migrationBuilder.DropTable(
+                name: "Lessons");
             migrationBuilder.DropTable(
                 name: "Tests");
-
             migrationBuilder.DropTable(
                 name: "Modules");
-
             migrationBuilder.DropTable(
                 name: "Courses");
-
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
-
             migrationBuilder.DropTable(
                 name: "Categories");
         }

@@ -4,21 +4,17 @@ using OnlineEducation.Api.Dtos.Courses;
 using OnlineEducation.Api.Dtos.Learning;
 using OnlineEducation.Api.Extensions;
 using OnlineEducation.Api.Interfaces;
-
 namespace OnlineEducation.Api.Controllers;
-
 [Route("api/learning")]
 [ApiController]
 [Authorize]
 public class LearningController : ControllerBase
 {
     private readonly ILearningService _learningService;
-
     public LearningController(ILearningService learningService)
     {
         _learningService = learningService;
     }
-
     [HttpPost("courses/{courseId}/enroll")]
     public async Task<IActionResult> EnrollInCourse(int courseId)
     {
@@ -37,7 +33,6 @@ public class LearningController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-
     [HttpGet("my-courses")]
     public async Task<ActionResult<IEnumerable<CourseDto>>> GetMyCourses()
     {
@@ -45,22 +40,17 @@ public class LearningController : ControllerBase
         var myCourses = await _learningService.GetMyCoursesAsync(userId);
         return Ok(myCourses);
     }
-
     [HttpGet("courses/{courseId}/details")]
     public async Task<ActionResult<MyCourseDetailsDto>> GetCourseDetails(int courseId)
     {
         var userId = User.GetUserId();
-
         var courseDetails = await _learningService.GetCourseDetailsAsync(courseId, userId);
-
         if (courseDetails == null)
         {
             return Forbid();
         }
-
         return Ok(courseDetails);
     }
-
     [HttpPost("test/{testId}/submit")]
     public async Task<ActionResult<GradingResultDto>> SubmitTest(int testId, [FromBody] TestSubmissionDto submissionDto)
     {
@@ -75,21 +65,17 @@ public class LearningController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-
     [HttpGet("lessons/{lessonId}")]
     public async Task<ActionResult<LessonDto>> GetLessonDetails(int lessonId)
     {
         var userId = User.GetUserId();
-
         try
         {
             var lessonDto = await _learningService.GetLessonDetailsAsync(lessonId, userId);
-
             if (lessonDto == null)
             {
                 return Forbid("You are not enrolled in the course for this lesson.");
             }
-
             return Ok(lessonDto);
         }
         catch (KeyNotFoundException ex)
@@ -97,7 +83,6 @@ public class LearningController : ControllerBase
             return NotFound(new { message = ex.Message });
         }
     }
-
     [HttpGet("test/{testId}")]
     public async Task<ActionResult<TestDetailsDto>> GetTestDetails(int testId)
     {
@@ -119,5 +104,16 @@ public class LearningController : ControllerBase
         {
             return NotFound(new { message = ex.Message });
         }
+    }
+    [HttpPost("lessons/{lessonId}/complete")]
+    public async Task<IActionResult> CompleteLesson(int lessonId)
+    {
+        var userId = User.GetUserId();
+        var (success, error) = await _learningService.CompleteLessonAsync(lessonId, userId);
+        if (!success)
+        {
+            return BadRequest(new { message = error });
+        }
+        return Ok(new { message = "Lesson completed successfully" });
     }
 }
