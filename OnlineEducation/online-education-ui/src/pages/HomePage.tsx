@@ -1,14 +1,12 @@
-import React from 'react';
+﻿import React from 'react';
 import { Typography, Container, Box, Button } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
 const HomePage = () => {
   const { auth } = useAuth();
-
   return (
     <Box>
-      {/* Hero Section */}
+      {}
       <Box
         sx={{
           backgroundColor: '#1f1f1f',
@@ -79,5 +77,4 @@ const HomePage = () => {
     </Box>
   );
 };
-
 export default HomePage;

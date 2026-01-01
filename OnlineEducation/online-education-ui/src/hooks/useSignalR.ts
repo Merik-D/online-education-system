@@ -1,6 +1,5 @@
-import { useContext } from 'react';
+﻿import { useContext } from 'react';
 import { SignalRContext } from '../context/SignalRContext';
-
 export const useSignalR = () => {
   const context = useContext(SignalRContext);
   if (!context) {

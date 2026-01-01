@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   Snackbar,
   Alert,
@@ -6,10 +6,8 @@ import {
   Stack,
 } from '@mui/material';
 import { useNotifications } from '../context/NotificationContext';
-
 export const NotificationContainer: React.FC = () => {
   const { notifications, removeNotification } = useNotifications();
-
   return (
     <Box
       sx={{

@@ -1,7 +1,5 @@
 ﻿using OnlineEducation.Api.Dtos.Admin;
-
 namespace OnlineEducation.Api.Interfaces;
-
 public interface IAdminService
 {
     Task<UserStatsDto> GetUserStatsAsync();

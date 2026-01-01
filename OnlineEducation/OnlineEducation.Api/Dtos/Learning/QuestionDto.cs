@@ -1,6 +1,5 @@
 ﻿using OnlineEducation.Api.Enums;
 namespace OnlineEducation.Api.Dtos.Learning;
-
 public class QuestionDto
 {
     public int Id { get; set; }

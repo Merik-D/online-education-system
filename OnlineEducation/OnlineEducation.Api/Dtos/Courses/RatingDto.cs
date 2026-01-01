@@ -1,5 +1,4 @@
-namespace OnlineEducation.Api.Dtos.Courses;
-
+﻿namespace OnlineEducation.Api.Dtos.Courses;
 public class RatingDto
 {
     public int Id { get; set; }
@@ -9,7 +8,6 @@ public class RatingDto
     public DateTime CreatedAt { get; set; }
     public bool IsVerified { get; set; }
 }
-
 public class InstructorRatingDto
 {
     public int InstructorId { get; set; }
@@ -19,7 +17,6 @@ public class InstructorRatingDto
     public Dictionary<int, int> RatingDistribution { get; set; } = new();
     public List<RatingDto> RecentReviews { get; set; } = new();
 }
-
 public class CreateRatingDto
 {
     public int CourseId { get; set; }

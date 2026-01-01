@@ -1,33 +1,25 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OnlineEducation.Api.Dtos.Courses;
 using OnlineEducation.Api.Interfaces;
 using OnlineEducation.Api.Models.Common;
 using System.Security.Claims;
-
 namespace OnlineEducation.Api.Controllers;
-
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
 public class RecommendationsController : ControllerBase
 {
     private readonly IRecommendationService _recommendationService;
-
     public RecommendationsController(IRecommendationService recommendationService)
     {
         _recommendationService = recommendationService;
     }
-
     private int GetUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return int.TryParse(userIdClaim, out var userId) ? userId : 0;
     }
-
-    /// <summary>
-    /// Get personalized course recommendations for the logged-in student
-    /// </summary>
     [HttpGet("my-recommendations")]
     [ProducesResponseType(typeof(ApiResponse<CourseRecommendationListDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status400BadRequest)]
@@ -36,7 +28,6 @@ public class RecommendationsController : ControllerBase
         var userId = GetUserId();
         if (userId == 0)
             return BadRequest(new ApiResponse<string> { Success = false, Message = "Unable to identify user" });
-
         var recommendations = await _recommendationService.GetRecommendationsAsync(userId, pageNumber, pageSize);
         return Ok(new ApiResponse<CourseRecommendationListDto>
         {
@@ -45,10 +36,6 @@ public class RecommendationsController : ControllerBase
             Message = "Recommendations retrieved successfully"
         });
     }
-
-    /// <summary>
-    /// Get trending courses across the platform
-    /// </summary>
     [HttpGet("trending")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<CourseRecommendationListDto>), StatusCodes.Status200OK)]
@@ -62,10 +49,6 @@ public class RecommendationsController : ControllerBase
             Message = "Trending courses retrieved successfully"
         });
     }
-
-    /// <summary>
-    /// Get courses similar to those the student is enrolled in
-    /// </summary>
     [HttpGet("similar")]
     [ProducesResponseType(typeof(ApiResponse<CourseRecommendationListDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status400BadRequest)]
@@ -74,7 +57,6 @@ public class RecommendationsController : ControllerBase
         var userId = GetUserId();
         if (userId == 0)
             return BadRequest(new ApiResponse<string> { Success = false, Message = "Unable to identify user" });
-
         var similar = await _recommendationService.GetSimilarCoursesAsync(userId, pageNumber, pageSize);
         return Ok(new ApiResponse<CourseRecommendationListDto>
         {
@@ -83,10 +65,6 @@ public class RecommendationsController : ControllerBase
             Message = "Similar courses retrieved successfully"
         });
     }
-
-    /// <summary>
-    /// Mark a recommendation as viewed
-    /// </summary>
     [HttpPost("recommendations/{recommendationId}/mark-viewed")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status404NotFound)]
@@ -99,10 +77,6 @@ public class RecommendationsController : ControllerBase
             Message = "Recommendation marked as viewed"
         });
     }
-
-    /// <summary>
-    /// Track a user interaction with a course (view, enroll, complete, rate, etc.)
-    /// </summary>
     [HttpPost("courses/{courseId}/track-interaction")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status400BadRequest)]
@@ -113,7 +87,6 @@ public class RecommendationsController : ControllerBase
         var userId = GetUserId();
         if (userId == 0)
             return BadRequest(new ApiResponse<string> { Success = false, Message = "Unable to identify user" });
-
         await _recommendationService.TrackInteractionAsync(userId, courseId, interactionType);
         return Ok(new ApiResponse<string>
         {
@@ -121,10 +94,6 @@ public class RecommendationsController : ControllerBase
             Message = $"Interaction '{interactionType}' tracked successfully"
         });
     }
-
-    /// <summary>
-    /// Force regeneration of recommendations for a student
-    /// </summary>
     [HttpPost("regenerate")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status400BadRequest)]
@@ -133,7 +102,6 @@ public class RecommendationsController : ControllerBase
         var userId = GetUserId();
         if (userId == 0)
             return BadRequest(new ApiResponse<string> { Success = false, Message = "Unable to identify user" });
-
         await _recommendationService.GenerateRecommendationsAsync(userId);
         return Ok(new ApiResponse<string>
         {

@@ -1,27 +1,25 @@
-import { QuestionType } from "./enums";
-
-export interface GradeSubmissionDto { 
+﻿import { QuestionType } from "./enums";
+export interface GradeSubmissionDto {
   score: number;
 }
-export interface SelectedOptionDto { 
+export interface SelectedOptionDto {
   optionId: number;
   optionText: string;
 }
-export interface StudentAnswerDto { 
+export interface StudentAnswerDto {
   questionId: number;
   questionText: string;
   questionType: QuestionType;
   answerText?: string;
   selectedOptions: SelectedOptionDto[];
 }
-export interface PendingSubmissionDto { 
+export interface PendingSubmissionDto {
   submissionId: number;
   testTitle: string;
   studentName: string;
   submittedAt: string;
   answers: StudentAnswerDto[];
 }
-
 export interface UserDto {
   id: number;
   fullName: string;
@@ -29,7 +27,6 @@ export interface UserDto {
   roles: string[];
   isLockedOut: boolean;
 }
-
 export interface UserStatsDto {
   totalStudents: number;
   totalInstructors: number;

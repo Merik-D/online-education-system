@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CourseDto } from '../models/course.models';
-import { getMyCourses } from '../services/learningService';
+import { MyCourseDetailsDto } from '../models/learning.models';
+import { getMyCoursesWithProgress } from '../services/learningService';
 import {
   Container,
   Typography,
@@ -12,18 +12,18 @@ import {
   Box,
   CircularProgress,
   Alert,
+  LinearProgress,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 const MyCoursesPage = () => {
-  const [courses, setCourses] = useState<CourseDto[]>([]);
+  const [courses, setCourses] = useState<MyCourseDetailsDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const data = await getMyCourses();
+        const data = await getMyCoursesWithProgress();
         setCourses(data);
       } catch (err) {
         setError('Failed to load your courses');
@@ -34,7 +34,6 @@ const MyCoursesPage = () => {
     };
     fetchCourses();
   }, []);
-
   if (loading) {
     return (
       <Box className="loading-container">
@@ -42,7 +41,6 @@ const MyCoursesPage = () => {
       </Box>
     );
   }
-
   if (error) {
     return (
       <Container sx={{ py: 4 }}>
@@ -50,7 +48,6 @@ const MyCoursesPage = () => {
       </Container>
     );
   }
-
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
       <Box sx={{ mb: 6 }}>
@@ -68,7 +65,6 @@ const MyCoursesPage = () => {
           {courses.length} courses enrolled
         </Typography>
       </Box>
-
       {courses.length === 0 ? (
         <Box
           sx={{
@@ -105,7 +101,7 @@ const MyCoursesPage = () => {
         >
           {courses.map((course) => (
             <Card
-              key={course.id}
+              key={course.courseId}
               className="course-card"
               sx={{
                 height: '100%',
@@ -129,9 +125,40 @@ const MyCoursesPage = () => {
                 {course.title.charAt(0).toUpperCase()}
               </Box>
               <CardContent sx={{ flexGrow: 1 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                   {course.title}
                 </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                    <Typography variant="body2" color="textSecondary">
+                      {course.completedLessonsCount} of {course.totalLessonsCount} lessons
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: course.progress === 100 ? '#10b981' : '#a435f0' }}>
+                      {Math.round(course.progress)}%
+                    </Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={course.progress}
+                    sx={{
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: '#e0e0e0',
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: course.progress === 100 ? '#10b981' : '#a435f0',
+                        borderRadius: 4,
+                      }
+                    }}
+                  />
+                </Box>
+                {course.progress === 100 && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#10b981' }}>
+                    <CheckCircleIcon fontSize="small" />
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                      Completed
+                    </Typography>
+                  </Box>
+                )}
               </CardContent>
               <CardActions>
                 <Button
@@ -139,7 +166,7 @@ const MyCoursesPage = () => {
                   variant="contained"
                   size="small"
                   component={Link}
-                  to={`/my-courses/${course.id}`}
+                  to={`/my-courses/${course.courseId}`}
                   startIcon={<PlayArrowIcon />}
                   sx={{
                     backgroundColor: '#a435f0',
@@ -150,7 +177,7 @@ const MyCoursesPage = () => {
                     },
                   }}
                 >
-                  Continue
+                  {course.progress === 0 ? 'Start Course' : course.progress === 100 ? 'Review' : 'Continue'}
                 </Button>
               </CardActions>
             </Card>
@@ -160,5 +187,4 @@ const MyCoursesPage = () => {
     </Container>
   );
 };
-
 export default MyCoursesPage;

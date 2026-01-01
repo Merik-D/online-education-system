@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -25,6 +25,7 @@ import {
   FormLabel,
   Divider,
   Chip,
+  Checkbox,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -33,55 +34,64 @@ import {
   Article as ArticleIcon,
 } from '@mui/icons-material';
 import { CourseBuilder, ModuleBuilder } from '../services/courseBuilder';
-import { CourseLevel, LessonType } from '../models/enums';
-import { createCourse, createModule, createLesson } from '../services/creatorService';
-import { LessonCreateDto } from '../models/creator.models';
-
-const steps = ['Course Details', 'Add Modules', 'Add Lessons', 'Review & Create'];
-
+import { CourseLevel, LessonType, QuestionType, GradingStrategyType } from '../models/enums';
+import { createCourse, createModule, createLesson, createTest, createQuestion } from '../services/creatorService';
+import { LessonCreateDto, OptionCreateDto, QuestionCreateDto, TestCreateDto } from '../models/creator.models';
+const steps = ['Course Details', 'Add Modules', 'Add Lessons', 'Add Tests (Optional)', 'Review & Create'];
 interface ModuleData {
   title: string;
   builder: ModuleBuilder;
 }
-
 interface LessonData {
   moduleIndex: number;
   title: string;
   type: LessonType;
   content: string;
 }
-
+interface OptionData {
+  text: string;
+  isCorrect: boolean;
+}
+interface QuestionData {
+  text: string;
+  type: QuestionType;
+  options: OptionData[];
+}
+interface TestData {
+  moduleIndex: number;
+  title: string;
+  strategyType: GradingStrategyType;
+  questions: QuestionData[];
+}
 const CourseBuilderPage = () => {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
   const [courseBuilder] = useState(() => new CourseBuilder());
-
-  // Step 1: Course Details
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [level, setLevel] = useState<CourseLevel>(CourseLevel.Beginner);
   const [categoryId, setCategoryId] = useState(1);
-
-  // Step 2: Modules
   const [modules, setModules] = useState<ModuleData[]>([]);
   const [currentModuleTitle, setCurrentModuleTitle] = useState('');
-
-  // Step 3: Lessons
   const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
   const [lessons, setLessons] = useState<LessonData[]>([]);
   const [lessonTitle, setLessonTitle] = useState('');
   const [lessonType, setLessonType] = useState<LessonType>(LessonType.Video);
   const [lessonContent, setLessonContent] = useState('');
-
-  // General
+  const [tests, setTests] = useState<TestData[]>([]);
+  const [currentTestModuleIndex, setCurrentTestModuleIndex] = useState(0);
+  const [testTitle, setTestTitle] = useState('');
+  const [strategyType, setStrategyType] = useState<GradingStrategyType>(GradingStrategyType.Auto);
+  const [questionText, setQuestionText] = useState('');
+  const [questionType, setQuestionType] = useState<QuestionType>(QuestionType.SingleChoice);
+  const [questionOptions, setQuestionOptions] = useState<OptionData[]>([]);
+  const [optionText, setOptionText] = useState('');
+  const [optionIsCorrect, setOptionIsCorrect] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
   const handleNext = () => {
     setError('');
-
     if (activeStep === 0) {
-      // Validate course details
       if (!title.trim()) {
         setError('Course title is required');
         return;
@@ -92,24 +102,18 @@ const CourseBuilderPage = () => {
       }
       courseBuilder.withTitle(title).withDescription(description).withLevel(level).withCategory(categoryId);
     }
-
     if (activeStep === 1) {
-      // Validate modules
       if (modules.length === 0) {
         setError('Add at least one module to continue');
         return;
       }
     }
-
     if (activeStep === 2) {
-      // Validate lessons
       const hasLessons = lessons.length > 0;
       if (!hasLessons) {
         setError('Add at least one lesson to continue');
         return;
       }
-
-      // Check that all modules have lessons
       const modulesWithoutLessons = modules.filter(
         (_, idx) => !lessons.some((l) => l.moduleIndex === idx)
       );
@@ -118,33 +122,26 @@ const CourseBuilderPage = () => {
         return;
       }
     }
-
     setActiveStep((prev) => prev + 1);
   };
-
   const handleBack = () => {
     setActiveStep((prev) => prev - 1);
   };
-
   const addModule = () => {
     if (!currentModuleTitle.trim()) {
       setError('Module title is required');
       return;
     }
-
     const moduleBuilder = courseBuilder.addModule(currentModuleTitle);
     setModules([...modules, { title: currentModuleTitle, builder: moduleBuilder }]);
     setCurrentModuleTitle('');
     setError('');
   };
-
   const removeModule = (index: number) => {
     const newModules = modules.filter((_, i) => i !== index);
     setModules(newModules);
-    // Remove associated lessons
     setLessons(lessons.filter((l) => l.moduleIndex !== index));
   };
-
   const addLesson = () => {
     if (!lessonTitle.trim()) {
       setError('Lesson title is required');
@@ -154,12 +151,9 @@ const CourseBuilderPage = () => {
       setError(`${lessonType === LessonType.Video ? 'Video URL' : 'Text content'} is required`);
       return;
     }
-
     const moduleBuilder = modules[currentModuleIndex].builder;
     const lessonOrder = lessons.filter((l) => l.moduleIndex === currentModuleIndex).length + 1;
-    
     moduleBuilder.withLesson(lessonTitle, lessonOrder, lessonType, lessonContent);
-
     setLessons([
       ...lessons,
       {
@@ -169,37 +163,130 @@ const CourseBuilderPage = () => {
         content: lessonContent,
       },
     ]);
-
     setLessonTitle('');
     setLessonContent('');
     setError('');
   };
-
   const removeLesson = (index: number) => {
     const lesson = lessons[index];
     setLessons(lessons.filter((_, i) => i !== index));
-    
-    // Note: In a real implementation, you'd need to rebuild the module's lessons
-    // For simplicity, we're just tracking display state here
   };
-
+  const getModuleTest = (moduleIndex: number) => tests.find((t) => t.moduleIndex === moduleIndex);
+  const handleTestModuleChange = (newIndex: number) => {
+    setCurrentTestModuleIndex(newIndex);
+    const existing = getModuleTest(newIndex);
+    setTestTitle(existing?.title || '');
+    setStrategyType(existing?.strategyType || GradingStrategyType.Auto);
+    setQuestionText('');
+    setQuestionType(QuestionType.SingleChoice);
+    setQuestionOptions([]);
+    setOptionText('');
+    setOptionIsCorrect(false);
+  };
+  const saveTestMeta = () => {
+    if (!modules[currentTestModuleIndex]) {
+      setError('Select a module to attach a test.');
+      return;
+    }
+    if (!testTitle.trim()) {
+      setError('Test title is required');
+      return;
+    }
+    const existing = getModuleTest(currentTestModuleIndex);
+    if (existing) {
+      const updated = tests.map((t) =>
+        t.moduleIndex === currentTestModuleIndex ? { ...t, title: testTitle.trim(), strategyType } : t
+      );
+      setTests(updated);
+    } else {
+      setTests([
+        ...tests,
+        {
+          moduleIndex: currentTestModuleIndex,
+          title: testTitle.trim(),
+          strategyType,
+          questions: [],
+        },
+      ]);
+    }
+    setError('');
+  };
+  const addOption = () => {
+    if (!optionText.trim()) {
+      setError('Option text is required');
+      return;
+    }
+    setQuestionOptions([...questionOptions, { text: optionText.trim(), isCorrect: optionIsCorrect }]);
+    setOptionText('');
+    setOptionIsCorrect(false);
+    setError('');
+  };
+  const removeOption = (index: number) => {
+    setQuestionOptions(questionOptions.filter((_, i) => i !== index));
+  };
+  const addQuestion = () => {
+    if (!testTitle.trim()) {
+      setError('Save the test title before adding questions');
+      return;
+    }
+    if (!questionText.trim()) {
+      setError('Question text is required');
+      return;
+    }
+    if (questionType !== QuestionType.Text) {
+      if (questionOptions.length < 2) {
+        setError('Add at least two options for choice questions');
+        return;
+      }
+      if (!questionOptions.some((o) => o.isCorrect)) {
+        setError('Mark at least one option as correct');
+        return;
+      }
+    }
+    const existing = getModuleTest(currentTestModuleIndex);
+    const baseTest =
+      existing || {
+        moduleIndex: currentTestModuleIndex,
+        title: testTitle.trim(),
+        strategyType,
+        questions: [],
+      };
+    const newQuestion: QuestionData = {
+      text: questionText.trim(),
+      type: questionType,
+      options: questionType === QuestionType.Text ? [] : questionOptions,
+    };
+    const updatedTests = existing
+      ? tests.map((t) =>
+          t.moduleIndex === currentTestModuleIndex
+            ? { ...t, title: testTitle.trim(), strategyType, questions: [...t.questions, newQuestion] }
+            : t
+        )
+      : [...tests, { ...baseTest, questions: [newQuestion] }];
+    setTests(updatedTests);
+    setQuestionText('');
+    setQuestionType(QuestionType.SingleChoice);
+    setQuestionOptions([]);
+    setOptionText('');
+    setOptionIsCorrect(false);
+    setError('');
+  };
   const handleCreate = async () => {
     setLoading(true);
     setError('');
-
     try {
-      // Step 1: Create the course
+      const testWithoutQuestions = tests.find((t) => t.questions.length === 0);
+      if (testWithoutQuestions) {
+        setError('Кожен тест повинен містити хоча б одне запитання.');
+        setLoading(false);
+        return;
+      }
       const courseData = courseBuilder.getCourse();
       const createdCourse = await createCourse(courseData);
-
-      // Step 2: Create modules and their lessons
       for (let i = 0; i < modules.length; i++) {
         const { module } = modules[i].builder.build();
         const createdModule = await createModule(createdCourse.id, module);
-
-        // Get lessons for this module
         const moduleLessons = lessons.filter((l) => l.moduleIndex === i);
-        
         for (let j = 0; j < moduleLessons.length; j++) {
           const lesson = moduleLessons[j];
           const lessonDto: LessonCreateDto = {
@@ -211,9 +298,31 @@ const CourseBuilderPage = () => {
           };
           await createLesson(createdModule.data.id, lessonDto);
         }
+        const moduleTest = tests.find((t) => t.moduleIndex === i);
+        if (moduleTest) {
+          const testDto: TestCreateDto = {
+            title: moduleTest.title,
+            strategyType: moduleTest.strategyType,
+          };
+          const createdTest = await createTest(createdModule.data.id, testDto);
+          for (let q = 0; q < moduleTest.questions.length; q++) {
+            const question = moduleTest.questions[q];
+            const questionDto: QuestionCreateDto = {
+              text: question.text,
+              type: question.type,
+              order: q + 1,
+              options:
+                question.type === QuestionType.Text
+                  ? []
+                  : question.options.map<OptionCreateDto>((opt) => ({
+                      text: opt.text,
+                      isCorrect: opt.isCorrect,
+                    })),
+            };
+            await createQuestion(createdTest.data.id, questionDto);
+          }
+        }
       }
-
-      // Success! Navigate to instructor dashboard
       navigate('/instructor/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create course. Please try again.');
@@ -221,7 +330,6 @@ const CourseBuilderPage = () => {
       setLoading(false);
     }
   };
-
   const renderStepContent = () => {
     switch (activeStep) {
       case 0:
@@ -267,7 +375,6 @@ const CourseBuilderPage = () => {
             />
           </Box>
         );
-
       case 1:
         return (
           <Box>
@@ -277,7 +384,6 @@ const CourseBuilderPage = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Organize your course into modules. Each module will contain lessons.
             </Typography>
-
             <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
               <TextField
                 fullWidth
@@ -290,7 +396,6 @@ const CourseBuilderPage = () => {
                 Add
               </Button>
             </Box>
-
             {modules.map((module, index) => (
               <Card key={index} sx={{ mb: 2 }}>
                 <CardContent>
@@ -305,13 +410,11 @@ const CourseBuilderPage = () => {
                 </CardContent>
               </Card>
             ))}
-
             {modules.length === 0 && (
               <Alert severity="info">No modules added yet. Add your first module above.</Alert>
             )}
           </Box>
         );
-
       case 2:
         return (
           <Box>
@@ -321,7 +424,6 @@ const CourseBuilderPage = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Add lessons to each module. Lessons can be videos or text-based content.
             </Typography>
-
             <FormControl fullWidth margin="normal">
               <InputLabel>Select Module</InputLabel>
               <Select
@@ -337,9 +439,7 @@ const CourseBuilderPage = () => {
                 ))}
               </Select>
             </FormControl>
-
             <Divider sx={{ my: 3 }} />
-
             <FormControl component="fieldset" margin="normal">
               <FormLabel component="legend">Lesson Type</FormLabel>
               <RadioGroup
@@ -367,7 +467,6 @@ const CourseBuilderPage = () => {
                 />
               </RadioGroup>
             </FormControl>
-
             <TextField
               fullWidth
               label="Lesson Title"
@@ -375,7 +474,6 @@ const CourseBuilderPage = () => {
               onChange={(e) => setLessonTitle(e.target.value)}
               margin="normal"
             />
-
             {lessonType === LessonType.Video ? (
               <TextField
                 fullWidth
@@ -397,7 +495,6 @@ const CourseBuilderPage = () => {
                 placeholder="Enter your lesson content here..."
               />
             )}
-
             <Button
               variant="contained"
               onClick={addLesson}
@@ -406,15 +503,12 @@ const CourseBuilderPage = () => {
             >
               Add Lesson
             </Button>
-
             <Typography variant="subtitle1" sx={{ mt: 3, mb: 2 }}>
               Added Lessons:
             </Typography>
-
             {modules.map((module, moduleIdx) => {
               const moduleLessons = lessons.filter((l) => l.moduleIndex === moduleIdx);
               if (moduleLessons.length === 0) return null;
-
               return (
                 <Box key={moduleIdx} sx={{ mb: 3 }}>
                   <Typography variant="subtitle2" color="primary" sx={{ mb: 1 }}>
@@ -446,14 +540,148 @@ const CourseBuilderPage = () => {
                 </Box>
               );
             })}
-
             {lessons.length === 0 && (
               <Alert severity="info">No lessons added yet. Add your first lesson above.</Alert>
             )}
           </Box>
         );
-
       case 3:
+        const currentTest = getModuleTest(currentTestModuleIndex);
+        return (
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Add Tests (Optional)
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Attach an optional test to a module. Courses without tests are allowed.
+            </Typography>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Select Module</InputLabel>
+              <Select
+                value={currentTestModuleIndex}
+                label="Select Module"
+                onChange={(e) => handleTestModuleChange(Number(e.target.value))}
+              >
+                {modules.map((module, index) => (
+                  <MenuItem key={index} value={index}>
+                    Module {index + 1}: {module.title}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              fullWidth
+              label="Test Title"
+              value={testTitle}
+              onChange={(e) => setTestTitle(e.target.value)}
+              margin="normal"
+              placeholder="e.g., Module Quiz"
+            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Grading Strategy</InputLabel>
+              <Select
+                value={strategyType}
+                label="Grading Strategy"
+                onChange={(e) => setStrategyType(e.target.value as GradingStrategyType)}
+              >
+                <MenuItem value={GradingStrategyType.Auto}>Auto</MenuItem>
+                <MenuItem value={GradingStrategyType.Manual}>Manual</MenuItem>
+              </Select>
+            </FormControl>
+            <Button variant="outlined" onClick={saveTestMeta} sx={{ mt: 1, mb: 3 }}>
+              {currentTest ? 'Update Test' : 'Save Test'}
+            </Button>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              Add Question
+            </Typography>
+            <TextField
+              fullWidth
+              label="Question Text"
+              value={questionText}
+              onChange={(e) => setQuestionText(e.target.value)}
+              margin="normal"
+            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Question Type</InputLabel>
+              <Select
+                value={questionType}
+                label="Question Type"
+                onChange={(e) => setQuestionType(e.target.value as QuestionType)}
+              >
+                <MenuItem value={QuestionType.SingleChoice}>Single Choice</MenuItem>
+                <MenuItem value={QuestionType.MultipleChoice}>Multiple Choice</MenuItem>
+                <MenuItem value={QuestionType.Text}>Text Answer</MenuItem>
+              </Select>
+            </FormControl>
+            {questionType !== QuestionType.Text && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Add options and mark the correct ones.
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1 }}>
+                  <TextField
+                    fullWidth
+                    label="Option text"
+                    value={optionText}
+                    onChange={(e) => setOptionText(e.target.value)}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={optionIsCorrect}
+                        onChange={(e) => setOptionIsCorrect(e.target.checked)}
+                      />
+                    }
+                    label="Correct"
+                  />
+                  <Button variant="contained" onClick={addOption} startIcon={<AddIcon />}>
+                    Add Option
+                  </Button>
+                </Box>
+                {questionOptions.map((opt, idx) => (
+                  <Chip
+                    key={idx}
+                    label={`${opt.text}${opt.isCorrect ? ' (correct)' : ''}`}
+                    onDelete={() => removeOption(idx)}
+                    color={opt.isCorrect ? 'success' : 'default'}
+                    sx={{ mr: 1, mb: 1 }}
+                  />
+                ))}
+              </Box>
+            )}
+            <Button variant="contained" onClick={addQuestion} startIcon={<AddIcon />}>
+              Add Question
+            </Button>
+            {currentTest && currentTest.questions.length > 0 && (
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle1">Questions for this module</Typography>
+                {currentTest.questions.map((q, idx) => (
+                  <Card key={idx} sx={{ my: 1 }}>
+                    <CardContent>
+                      <Typography variant="body1">{idx + 1}. {q.text}</Typography>
+                      <Chip label={q.type} size="small" sx={{ mt: 1, mr: 1 }} />
+                      {q.options.length > 0 && (
+                        <Box sx={{ mt: 1 }}>
+                          {q.options.map((opt, optIdx) => (
+                            <Chip
+                              key={optIdx}
+                              label={opt.text}
+                              color={opt.isCorrect ? 'success' : 'default'}
+                              size="small"
+                              sx={{ mr: 0.5, mb: 0.5 }}
+                            />
+                          ))}
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            )}
+          </Box>
+        );
+      case 4:
         return (
           <Box>
             <Typography variant="h6" gutterBottom>
@@ -462,7 +690,6 @@ const CourseBuilderPage = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Review your course structure before creating it.
             </Typography>
-
             <Paper sx={{ p: 2, mb: 2 }}>
               <Typography variant="subtitle2" color="primary">
                 Course Details
@@ -479,9 +706,9 @@ const CourseBuilderPage = () => {
                 <Chip label={`${lessons.length} Lessons`} size="small" />
               </Box>
             </Paper>
-
             {modules.map((module, moduleIdx) => {
               const moduleLessons = lessons.filter((l) => l.moduleIndex === moduleIdx);
+              const moduleTest = tests.find((t) => t.moduleIndex === moduleIdx);
               return (
                 <Paper key={moduleIdx} sx={{ p: 2, mb: 2 }}>
                   <Typography variant="subtitle2" color="primary">
@@ -497,17 +724,25 @@ const CourseBuilderPage = () => {
                       </Box>
                     ))}
                   </Box>
+                  {moduleTest && (
+                    <Box sx={{ ml: 2, mt: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Test: {moduleTest.title} ({moduleTest.strategyType})
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {moduleTest.questions.length} questions attached
+                      </Typography>
+                    </Box>
+                  )}
                 </Paper>
               );
             })}
           </Box>
         );
-
       default:
         return null;
     }
   };
-
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>
@@ -516,7 +751,6 @@ const CourseBuilderPage = () => {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
         Build your course step-by-step using our guided wizard
       </Typography>
-
       <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
         {steps.map((label) => (
           <Step key={label}>
@@ -524,16 +758,13 @@ const CourseBuilderPage = () => {
           </Step>
         ))}
       </Stepper>
-
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
-
       <Paper sx={{ p: 3 }}>
         {renderStepContent()}
-
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
           <Button disabled={activeStep === 0} onClick={handleBack}>
             Back
@@ -552,5 +783,4 @@ const CourseBuilderPage = () => {
     </Container>
   );
 };
-
 export default CourseBuilderPage;

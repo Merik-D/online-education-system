@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+﻿import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { LessonDto, MyCourseDetailsDto } from '../models/learning.models';
 import { getLessonById, getCourseDetails, completeLesson } from '../services/learningService';
-import { 
-  Typography, 
-  CircularProgress, 
-  Alert, 
+import { generateCertificateForCourse } from '../services/certificateService';
+import {
+  Typography,
+  CircularProgress,
+  Alert,
   Box,
   Button,
   Accordion,
@@ -17,6 +18,7 @@ import {
   ListItemText,
   IconButton,
   Snackbar,
+  LinearProgress,
 } from '@mui/material';
 import { LessonType } from '../models/enums';
 import YouTube from 'react-youtube';
@@ -27,49 +29,62 @@ import ArticleIcon from '@mui/icons-material/Article';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 const LessonPage = () => {
   const { lessonId, courseId } = useParams<{ lessonId: string; courseId: string }>();
+  const navigate = useNavigate();
   const [lesson, setLesson] = useState<LessonDto | null>(null);
   const [courseDetails, setCourseDetails] = useState<MyCourseDetailsDto | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [lessonLoading, setLessonLoading] = useState(true);
   const [error, setError] = useState('');
   const [showSidebar, setShowSidebar] = useState(true);
   const [completionLoading, setCompletionLoading] = useState(false);
+  const [generatingCertificate, setGeneratingCertificate] = useState(false);
+  const [certificateMessage, setCertificateMessage] = useState('');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-
+  const courseDetailsLoadedRef = useRef(false);
+  useEffect(() => {
+    const fetchCourseDetails = async () => {
+      if (!courseId || courseDetailsLoadedRef.current) return;
+      try {
+        const details = await getCourseDetails(Number(courseId));
+        setCourseDetails(details);
+        courseDetailsLoadedRef.current = true;
+      } catch (err) {
+        console.warn('Could not fetch course details:', err);
+      }
+    };
+    fetchCourseDetails();
+  }, [courseId]);
   useEffect(() => {
     const fetchLesson = async () => {
       if (!lessonId) return;
       try {
-        setLoading(true);
+        setLessonLoading(true);
+        setError('');
         const data = await getLessonById(Number(lessonId));
         setLesson(data);
-        
-        // Fetch course details if courseId is available
-        if (courseId) {
-          try {
-            const details = await getCourseDetails(Number(courseId));
-            setCourseDetails(details);
-          } catch (err) {
-            console.warn('Could not fetch course details:', err);
-          }
-        }
       } catch (err) {
         setError('Error fetching lesson details.');
         console.error(err);
       } finally {
-        setLoading(false);
+        setLessonLoading(false);
       }
     };
     fetchLesson();
-  }, [lessonId, courseId]);
-
+  }, [lessonId]);
+  const handleLessonClick = useCallback((newLessonId: number, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const path = courseId ? `/my-courses/${courseId}/lesson/${newLessonId}` : `/lesson/${newLessonId}`;
+    navigate(path, { replace: false });
+  }, [courseId, navigate]);
   const getYouTubeId = (url: string): string | null => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
-
     if (match && match[2].length === 11) {
       return match[2];
     } else {
@@ -77,14 +92,24 @@ const LessonPage = () => {
       return null;
     }
   };
-
   const handleCompleteLesson = async () => {
     if (!lessonId) return;
-    
     try {
       setCompletionLoading(true);
       await completeLesson(Number(lessonId));
       setShowSuccessMessage(true);
+      if (courseId) {
+        try {
+          const updatedDetails = await getCourseDetails(Number(courseId));
+          setCourseDetails(updatedDetails);
+        } catch {}
+      }
+      try {
+        if (courseId) {
+          const { trackInteraction } = await import('../services/recommendationService');
+          await trackInteraction(Number(courseId), 'complete');
+        }
+      } catch {}
     } catch (err) {
       console.error('Error completing lesson:', err);
       setError('Failed to mark lesson as complete. Please try again.');
@@ -92,20 +117,17 @@ const LessonPage = () => {
       setCompletionLoading(false);
     }
   };
-
   let youtubeId: string | null = null;
   if (lesson && lesson.type === LessonType.Video && lesson.videoUrl) {
     youtubeId = getYouTubeId(lesson.videoUrl);
   }
-
-  if (loading) {
+  if (lessonLoading && !lesson) {
     return (
       <Box className="loading-container">
         <CircularProgress />
       </Box>
     );
   }
-
   if (error) {
     return (
       <Box sx={{ backgroundColor: '#f7f7f7', minHeight: '100vh', py: 4 }}>
@@ -115,7 +137,6 @@ const LessonPage = () => {
       </Box>
     );
   }
-
   if (!lesson) {
     return (
       <Box sx={{ backgroundColor: '#f7f7f7', minHeight: '100vh', py: 4 }}>
@@ -127,10 +148,9 @@ const LessonPage = () => {
       </Box>
     );
   }
-
   return (
     <Box sx={{ backgroundColor: '#1f1f1f', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
+      {}
       <Box
         sx={{
           backgroundColor: '#1f1f1f',
@@ -155,7 +175,6 @@ const LessonPage = () => {
         >
           Back to Course
         </Button>
-
         <Typography
           variant="h6"
           sx={{
@@ -171,7 +190,6 @@ const LessonPage = () => {
         >
           {lesson.title}
         </Typography>
-
         {courseDetails && (
           <IconButton
             onClick={() => setShowSidebar(!showSidebar)}
@@ -186,10 +204,9 @@ const LessonPage = () => {
           </IconButton>
         )}
       </Box>
-
-      {/* Main Content Area */}
+      {}
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Player Area - Left Side */}
+        {}
         <Box
           sx={{
             flex: 1,
@@ -203,7 +220,7 @@ const LessonPage = () => {
             width: '100%',
           }}
         >
-          {loading ? (
+          {lessonLoading ? (
             <CircularProgress sx={{ color: '#a435f0' }} />
           ) : lesson.type === LessonType.Video && youtubeId ? (
             <Box sx={{ width: '100%', height: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
@@ -295,8 +312,7 @@ const LessonPage = () => {
             </Typography>
           )}
         </Box>
-
-        {/* Sidebar - Right Side */}
+        {}
         {courseDetails && (
           <Box
             sx={{
@@ -313,7 +329,7 @@ const LessonPage = () => {
               boxShadow: { xs: '-4px 0 12px rgba(0,0,0,0.15)', md: 'none' },
             }}
           >
-            {/* Sidebar Header */}
+            {}
             <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0', backgroundColor: '#fff' }}>
               <Typography
                 variant="subtitle1"
@@ -323,6 +339,7 @@ const LessonPage = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  mb: 1,
                 }}
               >
                 Course content
@@ -334,9 +351,33 @@ const LessonPage = () => {
                   <CloseIcon fontSize="small" />
                 </IconButton>
               </Typography>
+              {courseDetails && (
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography variant="caption" color="textSecondary">
+                      {courseDetails.completedLessonsCount} / {courseDetails.totalLessonsCount} lessons
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: courseDetails.progress === 100 ? '#10b981' : '#a435f0' }}>
+                      {Math.round(courseDetails.progress)}%
+                    </Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={courseDetails.progress}
+                    sx={{
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: '#e0e0e0',
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: courseDetails.progress === 100 ? '#10b981' : '#a435f0',
+                        borderRadius: 3,
+                      }
+                    }}
+                  />
+                </Box>
+              )}
             </Box>
-
-            {/* Course Modules List */}
+            {}
             <Box sx={{ flex: 1, overflow: 'auto' }}>
               {courseDetails.modules.map((module) => (
                 <Accordion
@@ -361,7 +402,6 @@ const LessonPage = () => {
                       {module.title}
                     </Typography>
                   </AccordionSummary>
-
                   <AccordionDetails sx={{ p: 0 }}>
                     <List sx={{ width: '100%', p: 0 }}>
                       {module.lessons.map((l) => {
@@ -369,8 +409,8 @@ const LessonPage = () => {
                         return (
                           <ListItemButton
                             key={l.id}
-                            component={Link}
-                            to={courseId ? `/my-courses/${courseId}/lesson/${l.id}` : `/lesson/${l.id}`}
+                            onClick={(e) => handleLessonClick(l.id, e)}
+                            selected={isCurrentLesson}
                             sx={{
                               pl: 4,
                               backgroundColor: isCurrentLesson ? 'rgba(164, 53, 240, 0.1)' : 'transparent',
@@ -386,7 +426,9 @@ const LessonPage = () => {
                                 color: isCurrentLesson ? '#a435f0' : '#999',
                               }}
                             >
-                              {l.type === LessonType.Video ? (
+                              {l.isCompleted ? (
+                                <CheckCircleIcon fontSize="small" sx={{ color: '#10b981' }} />
+                              ) : l.type === LessonType.Video ? (
                                 <PlayCircleIcon fontSize="small" />
                               ) : (
                                 <ArticleIcon fontSize="small" />
@@ -414,13 +456,96 @@ const LessonPage = () => {
                       })}
                     </List>
                   </AccordionDetails>
+                  {}
+                  {module.test && module.completedLessonsCount === module.totalLessonsCount && (
+                    <Box sx={{ p: 2, backgroundColor: '#f0e6ff', borderTop: '1px solid #e0e0e0' }}>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        sx={{
+                          backgroundColor: '#a435f0',
+                          color: '#fff',
+                          fontWeight: 600,
+                          fontSize: '0.85rem',
+                          textTransform: 'none',
+                          '&:hover': {
+                            backgroundColor: '#8e2dd6',
+                          },
+                        }}
+                        component={Link}
+                        to={`/test/${module.test.id}`}
+                      >
+                        📝 {module.test.title}
+                      </Button>
+                    </Box>
+                  )}
                 </Accordion>
               ))}
+              {}
+              {courseDetails && courseDetails.progress === 100 && (
+                <Box sx={{ p: 2, mt: 2, backgroundColor: '#fff5e6', borderRadius: 1, border: '2px solid #ffa500' }}>
+                  {certificateMessage && (
+                    <Alert
+                      severity={certificateMessage.includes('success') || certificateMessage.includes('generated') ? 'success' : 'warning'}
+                      sx={{ mb: 2, fontSize: '0.85rem' }}
+                      onClose={() => setCertificateMessage('')}
+                    >
+                      {certificateMessage}
+                    </Alert>
+                  )}
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<EmojiEventsIcon />}
+                    onClick={async () => {
+                      setGeneratingCertificate(true);
+                      setCertificateMessage('');
+                      try {
+                        const response = await generateCertificateForCourse(courseDetails.courseId);
+                        setCertificateMessage(response.message);
+                        setTimeout(() => {
+                          navigate('/certificates');
+                        }, 2000);
+                      } catch (err: any) {
+                        if (err.response && err.response.data.error) {
+                          setCertificateMessage(err.response.data.error);
+                        } else {
+                          setCertificateMessage('Unable to generate certificate. Please ensure all tests are passed with 70% or higher.');
+                        }
+                      } finally {
+                        setGeneratingCertificate(false);
+                      }
+                    }}
+                    disabled={generatingCertificate}
+                    sx={{
+                      background: 'linear-gradient(45deg, #FFD700 30%, #FFA500 90%)',
+                      color: '#000',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      textTransform: 'none',
+                      py: 1.5,
+                      boxShadow: '0 3px 5px 2px rgba(255, 165, 0, .3)',
+                      '&:hover': {
+                        background: 'linear-gradient(45deg, #FFA500 30%, #FFD700 90%)',
+                        boxShadow: '0 4px 8px 3px rgba(255, 165, 0, .4)',
+                      },
+                      '&:disabled': {
+                        background: '#ccc',
+                        color: '#666',
+                      },
+                    }}
+                  >
+                    {generatingCertificate ? '🏆 Generating...' : '🏆 Generate Certificate'}
+                  </Button>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
+                    Available when all lessons complete and all tests passed
+                  </Typography>
+                </Box>
+              )}
             </Box>
           </Box>
         )}
       </Box>
-      
       <Snackbar
         open={showSuccessMessage}
         autoHideDuration={4000}
@@ -431,5 +556,4 @@ const LessonPage = () => {
     </Box>
   );
 };
-
 export default LessonPage;

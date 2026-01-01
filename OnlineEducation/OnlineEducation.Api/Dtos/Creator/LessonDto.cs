@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using OnlineEducation.Api.Enums;
 namespace OnlineEducation.Api.Dtos.Creator;
-
 public class LessonCreateDto
 {
     [Required]

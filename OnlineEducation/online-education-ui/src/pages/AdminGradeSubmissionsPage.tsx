@@ -1,27 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { adminGradeSubmission, getPendingSubmissions } from '../services/adminService';
+﻿import React, { useEffect, useState } from 'react';
+import { gradeSubmission, getPendingSubmissions } from '../services/instructorService';
 import { PendingSubmissionDto } from '../models/admin.models';
-import { 
-  Container, 
-  Typography, 
-  Card, 
-  CardContent, 
-  Button, 
-  Box, 
+import {
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  Box,
   TextField,
   Alert,
   CircularProgress
 } from '@mui/material';
-
 const AdminGradeSubmissionsPage = () => {
   const [submissions, setSubmissions] = useState<PendingSubmissionDto[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [scores, setScores] = useState<{[key: number]: string}>({});
-
   const fetchSubmissions = async () => {
     try {
       setLoading(true);
+      setError('');
       const data = await getPendingSubmissions();
       setSubmissions(data);
     } catch (err) {
@@ -30,15 +29,12 @@ const AdminGradeSubmissionsPage = () => {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchSubmissions();
   }, []);
-
   const handleScoreChange = (submissionId: number, score: string) => {
     setScores(prev => ({...prev, [submissionId]: score}));
   };
-
   const handleGrade = async (submissionId: number) => {
     try {
       const score = parseFloat(scores[submissionId]);
@@ -46,17 +42,15 @@ const AdminGradeSubmissionsPage = () => {
         setError('Оцінка має бути від 0 до 100');
         return;
       }
-      
-      await adminGradeSubmission(submissionId, { score });
-      fetchSubmissions(); // Оновити список
-      setScores(prev => ({...prev, [submissionId]: ''})); // Очистити поле
+      await gradeSubmission(submissionId, { score });
+      setError('');
+      fetchSubmissions();
+      setScores(prev => ({...prev, [submissionId]: ''}));
     } catch (err) {
       setError('Помилка при оцінюванні');
     }
   };
-
   if (loading) return <CircularProgress />;
-
   return (
     <Container>
       <Typography variant="h3" gutterBottom>
@@ -64,7 +58,6 @@ const AdminGradeSubmissionsPage = () => {
       </Typography>
       {error && <Alert severity="error">{error}</Alert>}
       {submissions.length === 0 && <Typography>Немає робіт для перевірки.</Typography>}
-      
       {submissions.map((sub) => (
         <Card key={sub.submissionId} sx={{ mb: 2 }}>
           <CardContent>
@@ -79,17 +72,16 @@ const AdminGradeSubmissionsPage = () => {
                 </Typography>
               </Box>
             ))}
-            
             <Box sx={{mt: 2, display: 'flex', alignItems: 'center'}}>
-              <TextField 
+              <TextField
                 label="Оцінка (0-100)"
                 type="number"
                 size="small"
                 value={scores[sub.submissionId] || ''}
                 onChange={(e) => handleScoreChange(sub.submissionId, e.target.value)}
               />
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 sx={{ ml: 2 }}
                 onClick={() => handleGrade(sub.submissionId)}
               >
@@ -102,5 +94,4 @@ const AdminGradeSubmissionsPage = () => {
     </Container>
   );
 };
-
 export default AdminGradeSubmissionsPage;

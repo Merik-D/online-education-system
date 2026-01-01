@@ -1,5 +1,4 @@
-namespace OnlineEducation.Api.Dtos.Courses;
-
+﻿namespace OnlineEducation.Api.Dtos.Courses;
 public class RecommendedCourseDto
 {
     public int Id { get; set; }
@@ -14,10 +13,9 @@ public class RecommendedCourseDto
     public string InstructorName { get; set; } = string.Empty;
     public int RecommendationId { get; set; }
 }
-
 public class CourseRecommendationListDto
 {
     public int TotalRecommendations { get; set; }
     public List<RecommendedCourseDto> Recommendations { get; set; } = new();
-    public string FilterApplied { get; set; } = "all"; // all, trending, similar_category, popular
+    public string FilterApplied { get; set; } = "all";
 }

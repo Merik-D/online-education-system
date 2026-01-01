@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+﻿import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { TestDetailsDto, TestSubmissionDto, AnswerSubmissionDto } from '../models/learning.models';
 import { submitTest, getTestDetails } from '../services/learningService';
 import { QuestionType } from '../models/enums';
@@ -25,24 +25,19 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ClearIcon from '@mui/icons-material/Clear';
 import InfoIcon from '@mui/icons-material/Info';
-
 type AnswersState = {
   [questionId: number]: {
     answerText: string;
     selectedOptionIds: number[];
   };
 };
-
 const TestPage = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-
   const [test, setTest] = useState<TestDetailsDto | null>(null);
   const [answers, setAnswers] = useState<AnswersState>({});
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchTest = async () => {
       if (!id) return;
@@ -50,12 +45,18 @@ const TestPage = () => {
         setLoading(true);
         const data = await getTestDetails(Number(id));
         setTest(data);
-
-        const initialAnswers: AnswersState = {};
-        data.questions.forEach((q) => {
-          initialAnswers[q.id] = { answerText: '', selectedOptionIds: [] };
-        });
-        setAnswers(initialAnswers);
+        if (data.isCompleted) {
+          setResult({
+            score: data.score,
+            status: 1
+          });
+        } else {
+          const initialAnswers: AnswersState = {};
+          data.questions.forEach((q) => {
+            initialAnswers[q.id] = { answerText: '', selectedOptionIds: [] };
+          });
+          setAnswers(initialAnswers);
+        }
       } catch (err: any) {
         if (err.response && err.response.data.message) {
           setError(err.response.data.message);
@@ -68,38 +69,32 @@ const TestPage = () => {
     };
     fetchTest();
   }, [id]);
-
   const handleTextChange = (questionId: number, value: string) => {
     setAnswers((prev) => ({
       ...prev,
       [questionId]: { ...prev[questionId], answerText: value, selectedOptionIds: [] },
     }));
   };
-
   const handleSingleChoiceChange = (questionId: number, optionId: number) => {
     setAnswers((prev) => ({
       ...prev,
       [questionId]: { ...prev[questionId], answerText: '', selectedOptionIds: [optionId] },
     }));
   };
-
   const handleMultiChoiceChange = (questionId: number, optionId: number) => {
     const currentSelection = answers[questionId]?.selectedOptionIds || [];
     const newSelection = currentSelection.includes(optionId)
       ? currentSelection.filter((id) => id !== optionId)
       : [...currentSelection, optionId];
-
     setAnswers((prev) => ({
       ...prev,
       [questionId]: { ...prev[questionId], answerText: '', selectedOptionIds: newSelection },
     }));
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
     setError('');
-
     const submissionDto: TestSubmissionDto = {
       answers: Object.keys(answers).map((key) => ({
         questionId: Number(key),
@@ -107,7 +102,6 @@ const TestPage = () => {
         selectedOptionIds: answers[Number(key)].selectedOptionIds,
       })),
     };
-
     try {
       const data = await submitTest(Number(id), submissionDto);
       setResult(data);
@@ -119,7 +113,6 @@ const TestPage = () => {
       }
     }
   };
-
   if (loading) {
     return (
       <Box className="loading-container">
@@ -127,11 +120,9 @@ const TestPage = () => {
       </Box>
     );
   }
-
   if (result) {
-    const isAutoGraded = result.status === 1; // Status 1 = Graded
-    const isPendingReview = result.status === 2; // Status 2 = PendingReview
-
+    const isAutoGraded = result.status === 1;
+    const isPendingReview = result.status === 2;
     return (
       <Box sx={{ backgroundColor: '#f7f7f7', minHeight: '100vh', py: 6 }}>
         <Container maxWidth="sm">
@@ -172,7 +163,6 @@ const TestPage = () => {
                 </Alert>
               </>
             ) : null}
-
             <Button
               component={Link}
               to="/my-courses"
@@ -192,7 +182,6 @@ const TestPage = () => {
       </Box>
     );
   }
-
   if (error && error.includes('already submitted')) {
     return (
       <Box sx={{ backgroundColor: '#f7f7f7', minHeight: '100vh', py: 6 }}>
@@ -212,7 +201,6 @@ const TestPage = () => {
       </Box>
     );
   }
-
   if (error) {
     return (
       <Container sx={{ py: 4 }}>
@@ -220,7 +208,6 @@ const TestPage = () => {
       </Container>
     );
   }
-
   if (!test) {
     return (
       <Container sx={{ py: 4 }}>
@@ -230,7 +217,6 @@ const TestPage = () => {
       </Container>
     );
   }
-
   return (
     <Box sx={{ backgroundColor: '#f7f7f7', minHeight: '100vh', py: 4 }}>
       <Container maxWidth="lg">
@@ -247,7 +233,6 @@ const TestPage = () => {
         >
           Back to Courses
         </Button>
-
         <Paper
           sx={{
             p: { xs: 2, md: 4 },
@@ -269,7 +254,6 @@ const TestPage = () => {
             {test.questions.length} questions
           </Typography>
           <Divider sx={{ mb: 4 }} />
-
           <Box component="form" onSubmit={handleSubmit}>
             {test.questions.map((q, index) => (
               <Paper
@@ -292,7 +276,6 @@ const TestPage = () => {
                 >
                   {index + 1}. {q.text}
                 </Typography>
-
                 {q.type === QuestionType.Text && (
                   <TextField
                     fullWidth
@@ -309,7 +292,6 @@ const TestPage = () => {
                     }}
                   />
                 )}
-
                 {q.type === QuestionType.TrueFalse && (
                   <RadioGroup
                     value={answers[q.id]?.answerText || ''}
@@ -327,7 +309,6 @@ const TestPage = () => {
                     />
                   </RadioGroup>
                 )}
-
                 {q.type === QuestionType.SingleChoice && (
                   <RadioGroup
                     value={answers[q.id]?.selectedOptionIds[0] || ''}
@@ -345,7 +326,6 @@ const TestPage = () => {
                     ))}
                   </RadioGroup>
                 )}
-
                 {q.type === QuestionType.MultipleChoice && (
                   <FormGroup>
                     {q.options.map((opt) => (
@@ -370,9 +350,7 @@ const TestPage = () => {
                 )}
               </Paper>
             ))}
-
             <Divider sx={{ my: 4 }} />
-
             <Button
               type="submit"
               variant="contained"
@@ -397,5 +375,4 @@ const TestPage = () => {
     </Box>
   );
 };
-
 export default TestPage;

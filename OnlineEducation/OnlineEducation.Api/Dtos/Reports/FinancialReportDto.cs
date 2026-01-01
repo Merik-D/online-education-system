@@ -1,5 +1,4 @@
-namespace OnlineEducation.Api.Dtos.Reports;
-
+﻿namespace OnlineEducation.Api.Dtos.Reports;
 public class FinancialReportDto
 {
     public int InstructorId { get; set; }
@@ -11,7 +10,6 @@ public class FinancialReportDto
     public List<CourseRevenueDto> CourseBreakdown { get; set; } = new();
     public List<MonthlyRevenueDto> MonthlyTrend { get; set; } = new();
 }
-
 public class CourseRevenueDto
 {
     public int CourseId { get; set; }
@@ -20,14 +18,12 @@ public class CourseRevenueDto
     public decimal TotalRevenue { get; set; }
     public decimal RevenuePerStudent { get; set; }
 }
-
 public class MonthlyRevenueDto
 {
     public string Month { get; set; } = string.Empty;
     public decimal Revenue { get; set; }
     public int Enrollments { get; set; }
 }
-
 public class PlatformRevenueDto
 {
     public decimal TotalRevenue { get; set; }

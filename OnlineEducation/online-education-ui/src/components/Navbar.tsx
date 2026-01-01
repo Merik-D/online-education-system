@@ -1,42 +1,37 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppBar, Toolbar, Typography, Button, Box, Avatar, Menu, MenuItem } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import NotificationsMenu from './NotificationsMenu';
-
 const Navbar = () => {
   const { auth, logout, isAdmin, isInstructor, isStudent } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-
   const handleLogout = () => {
     logout();
     navigate('/');
     setAnchorEl(null);
   };
-
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
-
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
-
   return (
-    <AppBar 
-      position="static" 
-      sx={{ 
+    <AppBar
+      position="static"
+      sx={{
         backgroundColor: '#1f1f1f',
         boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
         borderBottom: '1px solid #e0e0e0'
       }}
     >
       <Toolbar sx={{ py: 1.5 }}>
-        <Typography 
-          variant="h6" 
-          component="div" 
-          sx={{ 
+        <Typography
+          variant="h6"
+          component="div"
+          sx={{
             flexGrow: 1,
             fontWeight: 700,
             fontSize: '1.5rem',
@@ -47,13 +42,12 @@ const Navbar = () => {
             Udemy
           </Link>
         </Typography>
-        
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Button 
-            color="inherit" 
-            component={Link} 
+          <Button
+            color="inherit"
+            component={Link}
             to="/courses"
-            sx={{ 
+            sx={{
               textTransform: 'none',
               fontSize: '0.95rem',
               '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
@@ -61,31 +55,43 @@ const Navbar = () => {
           >
             Каталог
           </Button>
-
           {auth ? (
             <>
               {isAdmin() && (
-                <Button 
-                  color="inherit" 
-                  component={Link} 
-                  to="/admin/dashboard"
-                  sx={{ 
-                    textTransform: 'none',
-                    fontSize: '0.95rem',
-                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
-                  }}
-                >
-                  Admin
-                </Button>
+                <>
+                  <Button
+                    color="inherit"
+                    component={Link}
+                    to="/admin/dashboard"
+                    sx={{
+                      textTransform: 'none',
+                      fontSize: '0.95rem',
+                      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                    }}
+                  >
+                    Admin
+                  </Button>
+                  <Button
+                    color="inherit"
+                    component={Link}
+                    to="/admin/reports"
+                    sx={{
+                      textTransform: 'none',
+                      fontSize: '0.95rem',
+                      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                    }}
+                  >
+                    Звіти
+                  </Button>
+                </>
               )}
-              
               {isInstructor() && (
                 <>
-                  <Button 
-                    color="inherit" 
-                    component={Link} 
+                  <Button
+                    color="inherit"
+                    component={Link}
                     to="/instructor/dashboard"
-                    sx={{ 
+                    sx={{
                       textTransform: 'none',
                       fontSize: '0.95rem',
                       '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
@@ -93,11 +99,11 @@ const Navbar = () => {
                   >
                     Teaching
                   </Button>
-                  <Button 
-                    color="inherit" 
-                    component={Link} 
+                  <Button
+                    color="inherit"
+                    component={Link}
                     to="/instructor/grade-submissions"
-                    sx={{ 
+                    sx={{
                       textTransform: 'none',
                       fontSize: '0.95rem',
                       '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
@@ -107,27 +113,50 @@ const Navbar = () => {
                   </Button>
                 </>
               )}
-
               {isStudent() && (
-                <Button 
-                  color="inherit" 
-                  component={Link} 
-                  to="/my-courses"
-                  sx={{ 
-                    textTransform: 'none',
-                    fontSize: '0.95rem',
-                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
-                  }}
-                >
-                  My Learning
-                </Button>
+                <>
+                  <Button
+                    color="inherit"
+                    component={Link}
+                    to="/my-courses"
+                    sx={{
+                      textTransform: 'none',
+                      fontSize: '0.95rem',
+                      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                    }}
+                  >
+                    My Learning
+                  </Button>
+                  <Button
+                    color="inherit"
+                    component={Link}
+                    to="/certificates"
+                    sx={{
+                      textTransform: 'none',
+                      fontSize: '0.95rem',
+                      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                    }}
+                  >
+                    Certificates
+                  </Button>
+                  <Button
+                    color="inherit"
+                    component={Link}
+                    to="/recommendations"
+                    sx={{
+                      textTransform: 'none',
+                      fontSize: '0.95rem',
+                      '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                    }}
+                  >
+                    Recommendations
+                  </Button>
+                </>
               )}
-
               {isStudent() && <NotificationsMenu />}
-              
-              <Avatar 
+              <Avatar
                 onClick={handleMenuClick}
-                sx={{ 
+                sx={{
                   cursor: 'pointer',
                   backgroundColor: '#a435f0',
                   ml: 2,
@@ -138,7 +167,6 @@ const Navbar = () => {
               >
                 {auth.fullName.charAt(0).toUpperCase()}
               </Avatar>
-              
               <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
@@ -154,11 +182,11 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <Button 
-                color="inherit" 
-                component={Link} 
+              <Button
+                color="inherit"
+                component={Link}
                 to="/login"
-                sx={{ 
+                sx={{
                   textTransform: 'none',
                   fontSize: '0.95rem',
                   '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
@@ -166,17 +194,17 @@ const Navbar = () => {
               >
                 Login
               </Button>
-              <Button 
-                color="inherit" 
-                component={Link} 
+              <Button
+                color="inherit"
+                component={Link}
                 to="/register"
                 variant="outlined"
-                sx={{ 
+                sx={{
                   textTransform: 'none',
                   fontSize: '0.95rem',
                   borderColor: 'white',
                   ml: 1,
-                  '&:hover': { 
+                  '&:hover': {
                     backgroundColor: 'rgba(255, 255, 255, 0.1)',
                     borderColor: 'white'
                   }
@@ -191,5 +219,4 @@ const Navbar = () => {
     </AppBar>
   );
 };
-
 export default Navbar;
